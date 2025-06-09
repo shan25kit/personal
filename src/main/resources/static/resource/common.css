@@ -1,0 +1,43 @@
+@charset "UTF-8";
+
+html, body {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	height: 100%;
+	font-family: sans-serif;
+}
+
+*, *::before, *::after {
+	box-sizing: inherit;
+}
+
+body {
+	overflow: hidden;
+}
+
+#grid {
+	position: relative;
+	width: 100vw;
+	height: 100vh;
+}
+
+.hex-tile {
+	position: absolute;
+	width: 100px;
+	height: 100px;
+	background: #eee;
+	clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	white-space: pre-wrap;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.hex-tile:hover {
+	background: #add8e6;
+	font-weight: bold;
+}
