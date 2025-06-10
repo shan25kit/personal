@@ -7,8 +7,8 @@
 <%@ include file="/WEB-INF/jsp/common/header.jsp"%>
 
 <script>
-		const api_key = '/GqDl/lZoJANdiXzVbb0Uz1cswM/8Gw9xSMjNUmVt1PVcFGKIXy63kroYJKIgkNM+reraQP098nIRsBOmOjBSQ==';
-		const url = 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkSearch';
+		const api_key = '';
+		const url = '';
 		const api1 = function () {
 		    $.ajax({
 		        url: url,
