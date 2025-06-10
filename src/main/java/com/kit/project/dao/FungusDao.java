@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Select;
 import com.kit.project.dto.Fungus;
 
 @Mapper
-public interface HomeDao {
+public interface FungusDao {
 
 	@Insert("""
 			<script>
@@ -20,7 +20,7 @@ public interface HomeDao {
 			 </foreach>
 			 </script>
 			""")
-	public void saveAll(List<Fungus> dataList);
+	public void postFngsdata(List<Fungus> dataList);
 
 	@Select("""
 			SELECT fngsPilbkNo, fngsGnrlNm

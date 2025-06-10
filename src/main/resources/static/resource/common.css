@@ -1,43 +1,53 @@
-@charset "UTF-8";
-
-html, body {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
-	height: 100%;
-	font-family: sans-serif;
-}
-
-*, *::before, *::after {
-	box-sizing: inherit;
-}
-
 body {
-	overflow: hidden;
+    margin: 0;
 }
 
-#grid {
-	position: relative;
-	width: 100vw;
-	height: 100vh;
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+   
+}
+
+#hex-grid {
+    position: relative;
+    border: 3px solid red;
 }
 
 .hex-tile {
-	position: absolute;
-	width: 100px;
-	height: 100px;
-	background: #eee;
-	clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	text-align: center;
-	white-space: pre-wrap;
-	font-size: 12px;
-	cursor: pointer;
+    position: absolute;
+    width: 86.6px;  /* sqrt(3) * 50 */
+    height: 100px;
+    clip-path: polygon(
+        50% 0%, 100% 25%, 100% 75%,
+        50% 100%, 0% 75%, 0% 25%
+    );
+    background-color: #ccc;
+    border: 2px solid transparent;
+    text-align: center;
+    line-height: 100px;
+    font-weight: bold;
+    color: #333;
+    transition: transform 0.2s;
 }
 
 .hex-tile:hover {
-	background: #add8e6;
-	font-weight: bold;
+    transform: scale(1.05);
+    cursor: pointer;
+}
+
+.card-deck {
+    width: 100px;
+    padding: 10px;
+    background: white;
+    border: 1px solid #ddd;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.card {
+    border: 1px solid #aaa;
+    background-color: #fff;
+    margin-bottom: 10px;
+    padding: 10px;
 }
