@@ -1,0 +1,53 @@
+body {
+    margin: 0;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+   
+}
+
+#hex-grid {
+    position: relative;
+    border: 3px solid red;
+}
+
+.hex-tile {
+    position: absolute;
+    width: 86.6px;  /* sqrt(3) * 50 */
+    height: 100px;
+    clip-path: polygon(
+        50% 0%, 100% 25%, 100% 75%,
+        50% 100%, 0% 75%, 0% 25%
+    );
+    background-color: #ccc;
+    border: 2px solid transparent;
+    text-align: center;
+    line-height: 100px;
+    font-weight: bold;
+    color: #333;
+    transition: transform 0.2s;
+}
+
+.hex-tile:hover {
+    transform: scale(1.05);
+    cursor: pointer;
+}
+
+.card-deck {
+    width: 100px;
+    padding: 10px;
+    background: white;
+    border: 1px solid #ddd;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.card {
+    border: 1px solid #aaa;
+    background-color: #fff;
+    margin-bottom: 10px;
+    padding: 10px;
+}
