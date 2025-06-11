@@ -1,0 +1,16 @@
+DROP DATABASE IF EXISTS MIS_D;
+CREATE DATABASE MIS_D;
+USE MIS_D;
+
+CREATE TABLE fungus (
+    familyKorNm   VARCHAR(100),
+    familyNm      VARCHAR(100),
+    fngsGnrlNm    VARCHAR(100),
+    fngsPilbkNo   INT,
+    fngsScnm      VARCHAR(200),
+    genusKorNm    VARCHAR(100),
+    genusNm       VARCHAR(100),
+    lastUpdtDtm   DATE
+);
+SELECT * FROM fungus;
+ALTER TABLE fungus ADD COLUMN id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST;
