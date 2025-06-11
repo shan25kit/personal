@@ -5,150 +5,169 @@
 <%@ include file="/WEB-INF/jsp/common/header.jsp"%>
 
 <div class="main-container">
-	<div id="center-tile" class="hex-tile center">
-		<div class="logo">MIS</div>
-		<%-- <div class="score">
+	<%-- <div class="score">
 			최고 점수: <span id="highScore">${highScore}</span>
 		</div> --%>
-	</div>
 	<div id="hex-grid" class="hex-grid"></div>
-	<div id="card-deck" class="card-deck"></div>
+</div>
+<div class="deck-area">
+	<div id="card-deck-player" class="card-deck">card-deck-player</div>
+	<div id="card-deck-opponent" class="card-deck">card-deck-opponent</div>
+</div>
+
 <!-- 	<div class="scoreboard">
 		점수: <span id="Score">0</span>
 	</div> -->
-</div>
 
 <script>
 
-$(document).ready(function () {
-	api1();
-})
+	$(document).ready(function() {
+		api1();
 
-const api1 = function () {
-    $.ajax({
-        url: 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkSearch',
-        type: 'GET',
-        data: {
-            serviceKey: '${apiKey}',
-            pageNo: 1,
-            numOfRows: 667,
-            returnType: 'xml'
-        },
-        dataType: 'xml',
-        success: function (data) {
-            const itemList = [];
+		const size = 50;
+		const tileWidth = Math.sqrt(3) * size;
+		const tileHeight = 2 * size;
+	
+		const center = { x: 0, y: 0, z: 0};
+		
+		console.log("Key for tile:", { x: 0, y: 0, z: 0}); 
+		const { x, y } = cubeToPixel({ x: 0, y: 0, z: 0});
+		console.log("Cube to pixel:", x, y); 
+		const gridWidth = $('#hex-grid').width();
+		const gridHeight = $('#hex-grid').height();
+		const left = (gridWidth ?? 0) / 2 + x - tileWidth / 2;
+		const top = (gridHeight ?? 0) / 2 + y - tileHeight / 2;
+		console.log("Calculated Position:", { left, top });
+		const tile = $('<div class="hex-tile"></div>').text("MIS");
+		tile.css({
+		    left: left + 'px',
+		    top: top + 'px'
+		});
 
-            $(data).find('item').each(function () {
-                const fngsGnrlNm = $(this).find('fngsGnrlNm').text();
-                const fngsPilbkNo = $(this).find('fngsPilbkNo').text();
+		tile.on('click', function () {
+			console.log("Tile clicked:", key(center));
+		    expandFrom(center, gridWidth, gridHeight);  // cube: 현재 클릭된 중앙 타일의 좌표
+		});
+		
+		tileMap.set(key(center), true);
+		$('#hex-grid').append(tile);
+	})
 
-                itemList.push({
-                    fngsGnrlNm: fngsGnrlNm,
-                    fngsPilbkNo: fngsPilbkNo
-                });
-            });
+	const api1 = function() {
+		$.ajax({
+					url : 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkSearch',
+					type : 'GET',
+					data : {
+						serviceKey : '${apiKey}',
+						pageNo : 1,
+						numOfRows : 667,
+						returnType : 'xml'
+					},
+					dataType : 'xml',
+					success : function(data) {
+						const itemList = [];
 
-            $.ajax({
-                url: '/api/postFngsData', 
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(itemList),
-                success: function (res) {
-                    console.log('성공:', res);
-                },
-                error: function (xhr, status, error) {
-                    console.log('실패:', error);
-                }
-            });
-        },
-        error: function (xhr, status, error) {
-            console.log('XML 요청 실패:', error);
-        }
-    });
-}
-/* const tileMap = new Map(); 
+						$(data).find('item').each(
+								function() {
+									const fngsGnrlNm = $(this).find(
+											'fngsGnrlNm').text();
+									const fngsPilbkNo = $(this).find(
+											'fngsPilbkNo').text();
 
-function key(cube) {
-    return `${cube.x},${cube.y},${cube.z}`;
-}
+									itemList.push({
+										fngsGnrlNm : fngsGnrlNm,
+										fngsPilbkNo : fngsPilbkNo
+									});
+								});
 
-function cubeToPixel(cube) {
-    const size = 50;
-    const x = size * Math.sqrt(3) * (cube.x + cube.z / 2);
-    const y = size * 1.5 * cube.z;
-    return { x, y };
-}
- */
- 
- /*    const center = { x: 0, y: 0, z: 0 };
-    const cubeDirections = [
-        { x: +1, y: -1, z: 0 },
-        { x: +1, y: 0,  z: -1 },
-        { x: 0,  y: +1, z: -1 },
-        { x: -1, y: +1, z: 0 },
-        { x: -1, y: 0,  z: +1 },
-        { x: 0,  y: -1, z: +1 }
-    ];
-    
-    $.get('/fungus/random', function (data) {
-        createTile(center, data);
-        expandFrom(center); 
-	});
+						$.ajax({
+							url : '/api/postFngsData',
+							type : 'POST',
+							contentType : 'application/json',
+							data : JSON.stringify(itemList),
+							success : function(res) {
+								console.log('성공:', res);
+							},
+							error : function(xhr, status, error) {
+								console.log('실패:', error);
+							}
+						});
+					},
+					error : function(xhr, status, error) {
+						console.log('XML 요청 실패:', error);
+					}
+				});
+	}
+	
+	function cubeToPixel(cube) {
+	const size = 50;
+	const tileWidth = Math.sqrt(3) * size;
+	const tileHeight = 2 * size;
+	
+	    const x = size * Math.sqrt(3) * (cube.x + cube.z / 2);
+	    const y = size * 3 / 2 * cube.z;
+	    return { x, y };
+	}
+	const tileMap = new Map(); // 중복 방지용
 
+	function key(cube) {
+	    return `${cube.x},${cube.y},${cube.z}`;
+	}
+	
+	function createTile(cube,label, gridWidth, gridHeight){
+		const size = 50;
+		const tileWidth = Math.sqrt(3) * size;
+		const tileHeight = 2 * size;
+	
+/* 		console.log("Key for tile:", key(cube)); */
+	
+		if (tileMap.has(key(cube))) return;
 
-function createTile(cube, tileData) {
-    if (tileMap.has(key(cube))) return;
+		
+		const { x, y } = cubeToPixel(cube);
+/* 		console.log("Cube to pixel:", x, y); */
+		const tile = $('<div class="hex-tile"></div>').text(label);
+		
+		const left = (gridWidth ?? 0) / 2 + x - tileWidth / 2;
+		const top = (gridHeight ?? 0) / 2 + y - tileHeight / 2;
 
-    const { x, y } = cubeToPixel(cube);
-    const $tile = $('<div class="hex-tile"></div>');
-    $tile.css({
-        left: `${x}px`,
-        top: `${y}px`,
-        backgroundColor: tileData.color
-    });
+		console.log("Calculated Position:", { left, top });
+		    
+		tile.css({
+		    left: left + 'px',
+		    top: top + 'px'
+		});
+		
+		tile.on('click', function () {
+			console.log("Tile clicked:", key(cube));
+		    expandFrom(cube, gridWidth, gridHeight);  // cube: 현재 클릭된 중앙 타일의 좌표
+		});
+		
+		tileMap.set(key(cube), true);
+		$('#hex-grid').append(tile);
+	};
+	
+	function expandFrom(cube, gridWidth, gridHeight) {
+	    const directions = [
+	        { x: +1, y: -1, z: 0 },
+	        { x: +1, y: 0, z: -1 },
+	        { x: 0, y: +1, z: -1 },
+	        { x: -1, y: +1, z: 0 },
+	        { x: -1, y: 0, z: +1 },
+	        { x: 0, y: -1, z: +1 },
+	    ];
 
-    $tile.text(tileData.category);
-    $tile.attr('data-key', key(cube));
+	    directions.forEach(dir => {
+	        const neighbor = {
+	            x: cube.x + dir.x,
+	            y: cube.y + dir.y,
+	            z: cube.z + dir.z
+	        };
 
-    $tile.on('click', () => {
-        handleTileClick(tileData);
-        expandFrom(cube);
-    });
-
-    $('#hex-grid').append($tile);
-    tileMap.set(key(cube), tileData);
-}
-
-function expandFrom(cube) {
-    for (let dir of cubeDirections) {
-        const neighbor = {
-            x: cube.x + dir.x,
-            y: cube.y + dir.y,
-            z: cube.z + dir.z
-        };
-
-        if (tileMap.has(key(neighbor))) continue;
-
-        $.get('/tile/random', function (data) {
-            createTile(neighbor, data);
-        });
-    }
-}
-
-// === 타일 클릭 핸들러 ===
-function handleTileClick(tileData) {
-    const $card = $('<div class="card"></div>');
-    $card.html(`
-        <h4>${tileData.category}</h4>
-        <p>${tileData.detail}</p>
-        <p>점수: ${tileData.score}</p>
-    `);
-    $('#card-deck').append($card);
-
-    // 점수 갱신
-    let score = parseInt($('#highScore').text());
-    $('#highScore').text(score + tileData.score);
-} */
+	        createTile(neighbor, "", gridWidth, gridHeight);
+	    });
+	}
+	
 </script>
 
 <%@ include file="/WEB-INF/jsp/common/footer.jsp"%>

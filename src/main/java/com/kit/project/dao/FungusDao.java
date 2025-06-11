@@ -13,7 +13,7 @@ public interface FungusDao {
 
 	@Insert("""
 			<script>
-			 INSERT INTO fungus (fngsPilbkNo, fngsGnrlNm)
+			 INSERT IGNORE INTO fungus (fngsPilbkNo, fngsGnrlNm)
 			 VALUES
 			 <foreach collection="list" item="item" separator=",">
 			     (#{item.fngsPilbkNo}, #{item.fngsGnrlNm})
