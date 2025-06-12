@@ -12,9 +12,11 @@ body, html {
 
 #hex-grid {
 	position: relative;
-	border: 3px solid red;
+	border: 3px solid red; 
 	width: 100vw;
     height: 100vh;
+    transform: translate(0, 0);
+      transition: transform 0.3s ease; 
 }
 
 .hex-tile {
@@ -25,16 +27,15 @@ body, html {
 	background-color: #ccc;
 	text-align: center;
 	color: #333;
-/* 	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%); */
 	text-align: center;
     line-height: 100px;
     font-weight: bold;
-}
+	
+	}
 
 .hex-tile:hover {
 	cursor: pointer;
+	
 }
 
 #card-deck-player {
