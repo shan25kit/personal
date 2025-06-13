@@ -19,11 +19,10 @@ public class UsrTileController {
 	}
 	
 	@GetMapping("/fungus/random")
-	public ResponseEntity<Fungus> getRandomFungus(Model model) {
+	public ResponseEntity<Fungus> getRandomFungus() {
 	    Random rand = new Random();
-        int id = rand.nextInt(667) + 1;
+        int id = rand.nextInt(666) + 1;
         Fungus fungus = fungusService.getFungusById(id);
-	    model.addAttribute("fungus",fungus);
 	    
 	    return ResponseEntity.ok(fungus);
 	}

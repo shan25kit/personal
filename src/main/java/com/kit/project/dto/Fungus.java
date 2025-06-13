@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 public class Fungus {
 	private int id;
 	private String fngsGnrlNm;
-	private String fngsPilbkNo;
+	private int fngsPilbkNo;
 }

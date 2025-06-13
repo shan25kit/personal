@@ -19,16 +19,7 @@ public class ApiController {
 		this.fungusService = fungusService;
 	}
 
-	/*
-	 * @GetMapping("/api/getFngsData") public ResponseEntity<String>
-	 * getFngsData(Model model) {
-	 * 
-	 * model.addAttribute("apiKey",apiKey);
-	 * 
-	 * return ResponseEntity.ok(apiKey);
-	 * 
-	 * }
-	 */
+
 	@PostMapping("/api/postFngsData")
 	public ResponseEntity<String> postFngsdata(@RequestBody List<Fungus> dataList) {
 		fungusService.postFngsdata(dataList);

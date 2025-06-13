@@ -71,6 +71,72 @@
 					}
 				});
 	} */
+	
+	const api2 = function(fungus,tile){
+		console.log(fungus,tile);
+		console.log(tile instanceof jQuery)
+		$.ajax({
+			url : 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkInfo',
+			type : 'GET',
+			data : {
+				serviceKey : '${apiKey}',
+				reqFngsPilbkNo: fungus.fngsPilbkNo
+				},
+			dataType : 'xml',
+			success : function(data) {
+				const itemDetail = {};
+
+				$(data).find('item').each(
+						function() {
+							const fngsGnrlNm = $(this).find(
+							'fngsGnrlNm').text();
+							const familyKorNm = $(this).find(
+									'familyKorNm').text();
+							const familyNm = $(this).find(
+									'familyNm').text();
+							const genusKorNm = $(this).find(
+									'genusKorNm').text();
+							const genusNm = $(this).find(
+									'genusNm').text();
+							const mshrmTpcdNm = $(this).find(
+									'mshrmTpcdNm').text();
+							const fngsEclgTpcdNm = $(this).find(
+									'fngsEclgTpcdNm').text();
+							const grwEvrntDesc = $(this).find(
+									'grwEvrntDesc').text();
+							const occrrSsnNm = $(this).find(
+									'occrrSsnNm').text();
+							const mshrmColorCdNm = $(this).find(
+									'mshrmColorCdNm').text();
+							const shpe = $(this).find(
+									'shpe').text();
+							const fngsPrpseTpcdNm = $(this).find(
+									'fngsPrpseTpcdNm').text();
+							
+							const html =`
+								<div>\${fngsGnrlNm}</div>
+								<div>\${familyKorNm}</div>
+								<div>\${familyNm}</div>
+								<div>\${genusKorNm}</div>
+								<div>\${genusNm}</div>
+								<div>\${mshrmTpcdNm}</div>
+								<div>\${fngsEclgTpcdNm}</div>
+								<div>\${grwEvrntDesc}</div>
+								<div>\${occrrSsnNm}</div>
+								<div>\${mshrmColorCdNm}</div>
+								<div>\${shpe}</div>
+								<div>\${fngsPrpseTpcdNm}</div>
+							`;
+							 $(tile).append(html);
+					
+						});
+					},
+				error : function(xhr, status, error) {
+					console.log('실패:', error);
+				}
+			})
+	};
+		
 	function createTile(cube, label = "") {
 
 		  let keyStr = key(cube);
@@ -86,11 +152,15 @@
 		    left: `calc(50% + \${pixel.x - tileWidth / 2}px)`,
 		    top: `calc(50% + \${pixel.y - tileHeight / 2}px)`
 		  });
-		  tile.on('click', function () {
+		  tile.off('click').on('click', function () {
 			  
 			  if (key(cube) !== key(centerCube)) {
-		          moveCenterTo(cube);}
-		    
+		          moveCenterTo(cube);
+		          $.get('/fungus/random', function(fungus) {
+		        	  console.log(fungus,tile);
+		        	  api2(fungus,tile);	  	    
+				  	})
+			  }
 		  });
 		  tileMap.set(keyStr, tile);
 		  $('#hex-grid').append(tile);
@@ -120,9 +190,9 @@
 		const centerTile = tileMap.get(key(centerCube))
 		centerTile.one('click', function () {
 			  generateNeighborTiles(centerCube);
+		/* 	tileMap.clear();
+			$('#hex-grid').empty();  */
 		  });
-	/* 	tileMap.clear();
-		$('#hex-grid').empty(); */
 		}
 	
 	function generateNeighborTiles(centerCube) {
@@ -151,16 +221,16 @@
 		}
 	function moveCenterTo(newCenter) {
 		 const offset = cubeToPixel({
-		        x: centerCube.x - newCenter.x,
-		        y: centerCube.y - newCenter.y,
-		        z: centerCube.z - newCenter.z
+		        x: -newCenter.x,
+		        y: -newCenter.y,
+		        z: -newCenter.z
 		      });
 
 		      $('#hex-grid').css('transform', `translate(\${offset.x}px, \${offset.y}px)`);
 
-		      centerCube = { ...newCenter };
-		      console.log("센터변경:",centerCube);
-		      generateNeighborTiles(centerCube);
+		      /* centerCube = { ...newCenter }; */
+		      console.log("센터변경:",newCenter);
+		      generateNeighborTiles(newCenter);
 	}
 		      
 </script>
