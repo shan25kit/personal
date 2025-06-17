@@ -74,7 +74,6 @@
 	
 	const api2 = function(fungus,tile){
 		console.log(fungus,tile);
-		console.log(tile instanceof jQuery)
 		$.ajax({
 			url : 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkInfo',
 			type : 'GET',
@@ -84,50 +83,33 @@
 				},
 			dataType : 'xml',
 			success : function(data) {
-				const itemDetail = {};
-
-				$(data).find('item').each(
-						function() {
-							const fngsGnrlNm = $(this).find(
-							'fngsGnrlNm').text();
-							const familyKorNm = $(this).find(
-									'familyKorNm').text();
-							const familyNm = $(this).find(
-									'familyNm').text();
-							const genusKorNm = $(this).find(
-									'genusKorNm').text();
-							const genusNm = $(this).find(
-									'genusNm').text();
-							const mshrmTpcdNm = $(this).find(
-									'mshrmTpcdNm').text();
-							const fngsEclgTpcdNm = $(this).find(
-									'fngsEclgTpcdNm').text();
-							const grwEvrntDesc = $(this).find(
-									'grwEvrntDesc').text();
-							const occrrSsnNm = $(this).find(
-									'occrrSsnNm').text();
-							const mshrmColorCdNm = $(this).find(
-									'mshrmColorCdNm').text();
-							const shpe = $(this).find(
-									'shpe').text();
-							const fngsPrpseTpcdNm = $(this).find(
-									'fngsPrpseTpcdNm').text();
+	
+			$(data).find('item').each(function() {
+							  const detail = {
+							          name: $(this).find('fngsGnrlNm').text(),
+							          familyKor: $(this).find('familyKorNm').text(),
+							          family: $(this).find('familyNm').text(),
+							          genusKor: $(this).find('genusKorNm').text(),
+							          genus: $(this).find('genusNm').text(),
+							          type: $(this).find('mshrmTpcdNm').text(),
+							          ecology: $(this).find('fngsEclgTpcdNm').text(),
+							          environment: $(this).find('grwEvrntDesc').text(),
+							          season: $(this).find('occrrSsnNm').text(),
+							          color: $(this).find('mshrmColorCdNm').text(),
+							          shape: $(this).find('shpe').text(),
+							          purpose: $(this).find('fngsPrpseTpcdNm').text()
+							        };
 							
-							const html =`
-								<div>\${fngsGnrlNm}</div>
-								<div>\${familyKorNm}</div>
-								<div>\${familyNm}</div>
-								<div>\${genusKorNm}</div>
-								<div>\${genusNm}</div>
-								<div>\${mshrmTpcdNm}</div>
-								<div>\${fngsEclgTpcdNm}</div>
-								<div>\${grwEvrntDesc}</div>
-								<div>\${occrrSsnNm}</div>
-								<div>\${mshrmColorCdNm}</div>
-								<div>\${shpe}</div>
-								<div>\${fngsPrpseTpcdNm}</div>
+					
+							tile.data('detail', detail);
+							console.log(detail);
+							 
+					const html =`
+							<div class="fungus-detail" style="display: none;">
+								<div>\${detail.name}</div>
+							</div>
 							`;
-							 $(tile).append(html);
+							 $(tile).append(html); 
 					
 						});
 					},
@@ -147,7 +129,7 @@
 		  const pixel = cubeToPixel(cube);
 		  console.log(pixel);
 		
-		  const tile = $('<div class="hex-tile"></div>').text(label);
+		  let tile = $('<div class="hex-tile"></div>').text(label);
 		  tile.css({
 		    left: `calc(50% + \${pixel.x - tileWidth / 2}px)`,
 		    top: `calc(50% + \${pixel.y - tileHeight / 2}px)`
@@ -156,14 +138,31 @@
 			  
 			  if (key(cube) !== key(centerCube)) {
 		          moveCenterTo(cube);
-		          $.get('/fungus/random', function(fungus) {
-		        	  console.log(fungus,tile);
-		        	  api2(fungus,tile);	  	    
-				  	})
+		          tile.css({
+		        	backgroundColor: 'black',
+		  			color: 'white'
+		  		  });
 			  }
+			    $(this).find('.fungus-detail').show();
+			    
+			    const detail = $(this).data('detail');
+			    
+			    if (detail) {
+			      renderToCardDeck(detail);
+			    }
+			    
 		  });
 		  tileMap.set(keyStr, tile);
+		  console.log("tile instance for", keyStr, tile);
+		  console.log(tileMap);
 		  $('#hex-grid').append(tile);
+		  
+		  if (key(cube) !== key(centerCube)) {
+	          $.get('/fungus/random', function(fungus) {
+	        	  console.log(fungus,tile);
+	        	  api2(fungus,tile);	  
+			  	})
+		  }
 	}
 	
 	let centerCube = { x: 0, y: 0, z: 0 };
@@ -184,14 +183,20 @@
 		}
 	
 	function createInitialTile() {
+		/* tileMap.clear();
+		$('#hex-grid').empty();  */
 		const gridWidth = $('#hex-grid').width();
 		const gridHeight = $('#hex-grid').height();
 		createTile(centerCube, "MIS", gridWidth, gridHeight);
 		const centerTile = tileMap.get(key(centerCube))
+		centerTile.css({
+			backgroundColor: 'black',
+			color: 'white',
+			fontSize: '1.5rem'
+			  });
 		centerTile.one('click', function () {
 			  generateNeighborTiles(centerCube);
-		/* 	tileMap.clear();
-			$('#hex-grid').empty();  */
+			  
 		  });
 		}
 	
@@ -232,6 +237,23 @@
 		      console.log("센터변경:",newCenter);
 		      generateNeighborTiles(newCenter);
 	}
+	
+	function renderToCardDeck(detail) {
+		  const html = `
+		    <div class="card">
+			  <h3>\${detail.name}</h3>
+		      <p><strong>과:</strong> \${detail.familyKor}</p>
+		      <p><strong> \${detail.family}</strong></p>
+		      <p><strong>속:</strong> \${detail.genusKor}</p>
+		      <p><strong>  \${detail.genus}</strong></p>
+		      <p><strong>형태:</strong> \${detail.shape}</p>
+		      <p><strong>생태:</strong> \${detail.environment}</p>
+		      <p><strong>계절:</strong> \${detail.season}</p>
+		      <p><strong>\${detail.purpose}</strong></p>
+		    </div>
+		  `;
+		  $('#card-deck-player').html(html);
+		}
 		      
 </script>
 

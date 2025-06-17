@@ -12,11 +12,10 @@ body, html {
 
 #hex-grid {
 	position: relative;
-	border: 3px solid red; 
 	width: 100vw;
     height: 100vh;
     transform: translate(0, 0);
-      transition: transform 0.3s ease; 
+    transition: transform 0.3s ease; 
 }
 
 .hex-tile {
@@ -24,13 +23,13 @@ body, html {
 	width: 86.6px;
 	height: 100px;
 	clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-	background-color: #ccc;
+	background-color: #f0f2f5;
 	text-align: center;
 	color: #333;
 	text-align: center;
     line-height: 100px;
     font-weight: bold;
-	
+	font-size: 0.6rem;
 	}
 
 .hex-tile:hover {
@@ -42,6 +41,7 @@ body, html {
 	width: 200px;
 	height: 100%;
 	border: 3px solid black;
+	background-color: white;
 	position: fixed;
 	top: 0;
 	left: 0;

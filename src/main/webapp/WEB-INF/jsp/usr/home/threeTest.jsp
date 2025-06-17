@@ -58,13 +58,6 @@ function createMushroom() {
   cap.scale.y = 0.5; // 납작하게
   group.add(cap);
 
-  // 3. 주름 (Gills) - 아래쪽 얇은 원판
-  const gillGeometry = new THREE.CylinderGeometry(4 * 0.9, 4 * 0.9, 0.2, 32);
-  const gillMaterial = new THREE.MeshStandardMaterial('#EEC1C1');
-  const gills = new THREE.Mesh(gillGeometry, gillMaterial);
-  gills.position.y = 6 + 0.1;
-  group.add(gills);
-
   return group;
 }
 
