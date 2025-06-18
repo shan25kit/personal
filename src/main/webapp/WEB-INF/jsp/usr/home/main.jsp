@@ -5,256 +5,272 @@
 <%@ include file="/WEB-INF/jsp/common/header.jsp"%>
 
 <div class="main-container">
-	<%-- <div class="score">
-			최고 점수: <span id="highScore">${highScore}</span>
-		</div> --%>
 	<div id="hex-grid" class="hex-grid"></div>
 </div>
 <div class="deck-area">
-	<div id="card-deck-player" class="card-deck">card-deck-player</div>
-	<div id="card-deck-opponent" class="card-deck">card-deck-opponent</div>
+	<div id="card-deck-player" class="card-deck">
+		<h2>Mushroom Card</h2>
+		<div id="score-player">
+			<span>Score: <strong id="total-score">0</strong></span>
+		</div>
+	</div>
+	<div id="card-deck-opponent" class="card-deck">
+		card-deck-opponent
+		<div id="score-opponent">
+			<span>Score: <strong id="total-score">0</strong></span>
+		</div>
+	</div>
 </div>
 
-<!-- 	<div class="scoreboard">
-		점수: <span id="Score">0</span>
-	</div> -->
 
 <script>
+//초기 변수 및 상수 설정
+const centerCube = { x: 0, y: 0, z: 0 };
+const size = 50;
+const tileWidth = Math.sqrt(3) * size;
+const tileHeight = 2 * size;
+const tileMap = new Map();
+let totalScore = 0;
 
-	$(document).ready(function() {
-		/* api1(); */
-		createInitialTile();
-	})
+const defaultTileColor = '#f5f5f5';
+const centerTileColor = 'black';
 
-	/* const api1 = function() {
-		$.ajax({
-					url : 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkSearch',
-					type : 'GET',
-					data : {
-						serviceKey : '${apiKey}',
-						pageNo : 1,
-						numOfRows : 667,
-						returnType : 'xml'
-					},
-					dataType : 'xml',
-					success : function(data) {
-						const itemList = [];
+const environmentColors = {
+  '낙엽': '#f5debf',
+  '활엽수': '#dcf5ec',
+  '곤충': '#d3d3de',
+  '기타': '#f5f5f5'
+};
 
-						$(data).find('item').each(
-								function() {
-									const fngsGnrlNm = $(this).find(
-											'fngsGnrlNm').text();
-									const fngsPilbkNo = $(this).find(
-											'fngsPilbkNo').text();
+$(document).ready(function () {
+  api1();
+  createInitialTile();
+});
 
-									itemList.push({
-										fngsGnrlNm : fngsGnrlNm,
-										fngsPilbkNo : fngsPilbkNo
-									});
-								});
+// --- 데이터 API 요청 ---
+function api1() {
+  $.ajax({
+    url: 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkSearch',
+    type: 'GET',
+    data: {
+      serviceKey: '${apiKey}',
+      pageNo: 1,
+      numOfRows: 667,
+      returnType: 'xml'
+    },
+    dataType: 'xml',
+    success: function (data) {
+      const itemList = [];
+      $(data).find('item').each(function () {
+        itemList.push({
+          fngsGnrlNm: $(this).find('fngsGnrlNm').text(),
+          fngsPilbkNo: $(this).find('fngsPilbkNo').text()
+        });
+      });
 
-						$.ajax({
-							url : '/api/postFngsData',
-							type : 'POST',
-							contentType : 'application/json',
-							data : JSON.stringify(itemList),
-							success : function(res) {
-								console.log('성공:', res);
-							},
-							error : function(xhr, status, error) {
-								console.log('실패:', error);
-							}
-						});
-					},
-					error : function(xhr, status, error) {
-						console.log('XML 요청 실패:', error);
-					}
-				});
-	} */
+      $.ajax({
+        url: '/api/postFngsData',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(itemList)
+      });
+    }
+  });
+}
+
+function api2(fungus, tile) {
+  $.ajax({
+    url: 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkInfo',
+    type: 'GET',
+    data: {
+      serviceKey: '${apiKey}',
+      reqFngsPilbkNo: fungus.fngsPilbkNo
+    },
+    dataType: 'xml',
+    success: function (data) {
+      $(data).find('item').each(function () {
+        const detail = {
+          name: $(this).find('fngsGnrlNm').text(),
+          familyKor: $(this).find('familyKorNm').text(),
+          family: $(this).find('familyNm').text(),
+          genusKor: $(this).find('genusKorNm').text(),
+          genus: $(this).find('genusNm').text(),
+          type: $(this).find('mshrmTpcdNm').text(),
+          ecology: $(this).find('fngsEclgTpcdNm').text(),
+          environment: $(this).find('grwEvrntDesc').text(),
+          season: $(this).find('occrrSsnNm').text(),
+          color: $(this).find('mshrmColorCdNm').text(),
+          shape: $(this).find('shpe').text(),
+          purpose: $(this).find('fngsPrpseTpcdNm').text()
+        };
+
+        tile.data('detail', detail);
+        
+        
+      });
+    }
+  });
+}
+
+// --- 타일 생성 관련 ---
+function createTile(cube, options = {}) {
+  const keyStr = key(cube);
+  if (tileMap.has(keyStr)) return;
+
+  const pixel = cubeToPixel(cube);
+  const tile = $('<div class="hex-tile"></div>');
+  tile.text(options.label || "");
+  tile.css({
+    left: `calc(50% + \${pixel.x - tileWidth / 2}px)`,
+    top: `calc(50% + \${pixel.y - tileHeight / 2}px)`,
+    backgroundColor: defaultTileColor
+  });
+  tile.data('cube', cube);
+
+  if (key(cube) !== key(centerCube)) {
+      $.get('/fungus/random', function(fungus) {
+    	  console.log(fungus,tile);
+    	  api2(fungus,tile);	  
+	  	})
+  }
+  
+  tile.hover(function () {
+    const detail = $(this).data('detail');
+    if (detail && detail.environment) {
+      const env = getEnvironmentKeyword(detail.environment);
+      tileMap.forEach(t => {
+        const d = t.data('detail');
+        if (d && getEnvironmentKeyword(d.environment) === env) {
+          t.css('background-color', environmentColors[env] || environmentColors['기타']);
+        }
+      });
+    }
+  }, function () {
+    tileMap.forEach(t => {
+      const cube = t.data('cube');
+      t.css('background-color', isCenterTile(cube) ? centerTileColor : defaultTileColor);
+    });
+  });
+
+  tile.on('click', function () {
+    if (!isCenterTile(cube)) moveCenterTo(cube);
+    const detail = $(this).data('detail');
+    if (!detail || $(this).data('clicked')) return;
+
+    const env = getEnvironmentKeyword(detail.environment);
+    $(this).data('clicked', true);
+
+    tileMap.forEach(t => {
+      const d = t.data('detail');
+      if (d && getEnvironmentKeyword(d.environment) === env) {
+        if (t.find('.fungus-detail').length === 0) {
+          t.append(`<div class="fungus-detail" style="display:none;"> /${d.name}</div>`);
+        }
+        t.css({ backgroundColor: environmentColors[env], color: 'black' });
+        t.find('.fungus-detail').show();
+      }
+    });
+
+    updateEnvironmentBackground(env);
+    renderToCardDeck(detail);
+  });
+
+  tileMap.set(keyStr, tile);
+  $('#hex-grid').append(tile);
+}
+
+function generateNeighborTiles(center) {
+  getCubeDirections().forEach(dir => {
+    const neighbor = {
+      x: center.x + dir.x,
+      y: center.y + dir.y,
+      z: center.z + dir.z
+    };
+    createTile(neighbor);
+  });
+}
+
+function createInitialTile() {
+  const centerTile = createTile(centerCube, { label: 'M I S' });
+  const tile = tileMap.get(key(centerCube));
+  tile.css({ backgroundColor: centerTileColor, color: 'white', fontSize: '1.5rem' });
+  tile.one('click', () => {
+    generateNeighborTiles(centerCube);
+    $('.deck-area').fadeIn();
+  });
+}
+
+function moveCenterTo(newCenter) {
+  const offset = cubeToPixel({ x: -newCenter.x, y: -newCenter.y, z: -newCenter.z });
+  $('#hex-grid').css('transform', `translate(\${offset.x}px, \${offset.y}px)`);
+  generateNeighborTiles(newCenter);
+}
+
+// --- 카드 렌더링 ---
+function renderToCardDeck(detail) {
+  const envKey = getEnvironmentKeyword(detail.environment);
+  const bgColor = environmentColors[envKey] || environmentColors['기타'];
+  const score = updateScore(detail.purpose);
+  const html = `
+    <div class="card" style="background-color: \${bgColor}; color: black;">
+      <h3> \${detail.name}</h3>
+      <p><strong>과:</strong> \${detail.familyKor}</p>
+      <p><strong> \${detail.family}</strong></p>
+      <p><strong>속:</strong> \${detail.genusKor}</p>
+      <p><strong> \${detail.genus}</strong></p>
+      <p><strong>형태:</strong> \${detail.shape}</p>
+      <p><strong>발생:</strong> \${detail.environment}</p>
+      <p><strong>생태:</strong> \${detail.ecology}</p>
+      <p><strong>계절:</strong> \${detail.season}</p>
+      <p><strong> \${detail.purpose}</strong></p>
+      <p><strong>점수:</strong> \${score}점</p>
+    </div>
+  `;
+  $('#card-deck-player').append(html);
+  totalScore += score;
+  $('#total-score').text(totalScore);
+}
+
+function updateScore(purpose) {
+  let score = 0;
+  if (purpose.includes("식용")) score += 5;
+  if (purpose.includes("약용")) score += 1;
+  if (purpose.includes("독버섯")) score -= 3;
+  return score;
+}
+
+// --- 유틸 함수 ---
+function key(cube) {
+  return `\${cube.x},\${cube.y},\${cube.z}`;
+}
+
+function isCenterTile(cube) {
+  return key(cube) === key(centerCube);
+}
+
+function cubeToPixel(cube) {
+  return {
+    x: size * Math.sqrt(3) * (cube.x + cube.z / 2),
+    y: size * 3 / 2 * cube.z
+  };
+}
+
+function getCubeDirections() {
+  return [
+    { x: +1, y: -1, z: 0 }, { x: +1, y: 0, z: -1 }, { x: 0, y: +1, z: -1 },
+    { x: -1, y: +1, z: 0 }, { x: -1, y: 0, z: +1 }, { x: 0, y: -1, z: +1 }
+  ];
+}
+
+function getEnvironmentKeyword(envText) {
+  if (envText.includes("낙엽")) return "낙엽";
+  if (envText.includes("활엽수")) return "활엽수";
+  if (envText.includes("곤충")) return "곤충";
+  return "기타";
+}
+
+
 	
-	const api2 = function(fungus,tile){
-		console.log(fungus,tile);
-		$.ajax({
-			url : 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkInfo',
-			type : 'GET',
-			data : {
-				serviceKey : '${apiKey}',
-				reqFngsPilbkNo: fungus.fngsPilbkNo
-				},
-			dataType : 'xml',
-			success : function(data) {
-	
-			$(data).find('item').each(function() {
-							  const detail = {
-							          name: $(this).find('fngsGnrlNm').text(),
-							          familyKor: $(this).find('familyKorNm').text(),
-							          family: $(this).find('familyNm').text(),
-							          genusKor: $(this).find('genusKorNm').text(),
-							          genus: $(this).find('genusNm').text(),
-							          type: $(this).find('mshrmTpcdNm').text(),
-							          ecology: $(this).find('fngsEclgTpcdNm').text(),
-							          environment: $(this).find('grwEvrntDesc').text(),
-							          season: $(this).find('occrrSsnNm').text(),
-							          color: $(this).find('mshrmColorCdNm').text(),
-							          shape: $(this).find('shpe').text(),
-							          purpose: $(this).find('fngsPrpseTpcdNm').text()
-							        };
-							
-					
-							tile.data('detail', detail);
-							console.log(detail);
-							 
-					const html =`
-							<div class="fungus-detail" style="display: none;">
-								<div>\${detail.name}</div>
-							</div>
-							`;
-							 $(tile).append(html); 
-					
-						});
-					},
-				error : function(xhr, status, error) {
-					console.log('실패:', error);
-				}
-			})
-	};
-		
-	function createTile(cube, label = "") {
-
-		  let keyStr = key(cube);
-		  if (tileMap.has(keyStr)) return;
-		  console.log("Trying to create tile with key:", keyStr);
-		  console.log(centerCube);
-		  // 중심 타일 기준 상대 좌표
-		  const pixel = cubeToPixel(cube);
-		  console.log(pixel);
-		
-		  let tile = $('<div class="hex-tile"></div>').text(label);
-		  tile.css({
-		    left: `calc(50% + \${pixel.x - tileWidth / 2}px)`,
-		    top: `calc(50% + \${pixel.y - tileHeight / 2}px)`
-		  });
-		  tile.off('click').on('click', function () {
-			  
-			  if (key(cube) !== key(centerCube)) {
-		          moveCenterTo(cube);
-		          tile.css({
-		        	backgroundColor: 'black',
-		  			color: 'white'
-		  		  });
-			  }
-			    $(this).find('.fungus-detail').show();
-			    
-			    const detail = $(this).data('detail');
-			    
-			    if (detail) {
-			      renderToCardDeck(detail);
-			    }
-			    
-		  });
-		  tileMap.set(keyStr, tile);
-		  console.log("tile instance for", keyStr, tile);
-		  console.log(tileMap);
-		  $('#hex-grid').append(tile);
-		  
-		  if (key(cube) !== key(centerCube)) {
-	          $.get('/fungus/random', function(fungus) {
-	        	  console.log(fungus,tile);
-	        	  api2(fungus,tile);	  
-			  	})
-		  }
-	}
-	
-	let centerCube = { x: 0, y: 0, z: 0 };
-    const size = 50;
-    const tileWidth = Math.sqrt(3) * size;
-    const tileHeight = 2 * size;
-	const tileMap = new Map(); // 중복 생성 방지\
-	
-	function key(cube) {
-		  return `\${cube.x},\${cube.y},\${cube.z}`;
-		}
-	function cubeToPixel(cube) {
-		  const size = 50;
-		  return {
-		    x: size * Math.sqrt(3) * (cube.x + cube.z / 2),
-		    y: size * 3 / 2 * cube.z
-		  };
-		}
-	
-	function createInitialTile() {
-		/* tileMap.clear();
-		$('#hex-grid').empty();  */
-		const gridWidth = $('#hex-grid').width();
-		const gridHeight = $('#hex-grid').height();
-		createTile(centerCube, "MIS", gridWidth, gridHeight);
-		const centerTile = tileMap.get(key(centerCube))
-		centerTile.css({
-			backgroundColor: 'black',
-			color: 'white',
-			fontSize: '1.5rem'
-			  });
-		centerTile.one('click', function () {
-			  generateNeighborTiles(centerCube);
-			  
-		  });
-		}
-	
-	function generateNeighborTiles(centerCube) {
-		  console.log('▶ generateNeighborTiles for', key(centerCube));
-		  const directions = [
-		    { x: +1, y: -1, z: 0 },
-		    { x: +1, y: 0, z: -1 },
-		    { x: 0, y: +1, z: -1 },
-		    { x: -1, y: +1, z: 0 },
-		    { x: -1, y: 0, z: +1 },
-		    { x: 0, y: -1, z: +1 },
-		  ];
-
-		  directions.forEach(dir => {
-		    const neighbor = {
-		      x: centerCube.x + dir.x,
-		      y: centerCube.y + dir.y,
-		      z: centerCube.z + dir.z
-		    };
-		    
-		    if (!tileMap.has(key(neighbor))) {
-		      createTile(neighbor, "" );
-		    }
-		    
-		  });
-		}
-	function moveCenterTo(newCenter) {
-		 const offset = cubeToPixel({
-		        x: -newCenter.x,
-		        y: -newCenter.y,
-		        z: -newCenter.z
-		      });
-
-		      $('#hex-grid').css('transform', `translate(\${offset.x}px, \${offset.y}px)`);
-
-		      /* centerCube = { ...newCenter }; */
-		      console.log("센터변경:",newCenter);
-		      generateNeighborTiles(newCenter);
-	}
-	
-	function renderToCardDeck(detail) {
-		  const html = `
-		    <div class="card">
-			  <h3>\${detail.name}</h3>
-		      <p><strong>과:</strong> \${detail.familyKor}</p>
-		      <p><strong> \${detail.family}</strong></p>
-		      <p><strong>속:</strong> \${detail.genusKor}</p>
-		      <p><strong>  \${detail.genus}</strong></p>
-		      <p><strong>형태:</strong> \${detail.shape}</p>
-		      <p><strong>생태:</strong> \${detail.environment}</p>
-		      <p><strong>계절:</strong> \${detail.season}</p>
-		      <p><strong>\${detail.purpose}</strong></p>
-		    </div>
-		  `;
-		  $('#card-deck-player').html(html);
-		}
-		      
 </script>
 
 <%@ include file="/WEB-INF/jsp/common/footer.jsp"%>
