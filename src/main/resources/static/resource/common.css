@@ -23,14 +23,16 @@ body, html {
 	width: 86.6px;
 	height: 100px;
 	clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-/* 	background-color: #f0f2f5; */
 	text-align: center;
 	color: #333;
 	text-align: center;
-    line-height: 100px;
     font-weight: bold;
 	font-size: 0.6rem;
 	transition: background-color 0.3s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	
 	}
 
 .hex-tile:hover {
@@ -44,42 +46,44 @@ body, html {
 
 #score-player{
 	position: fixed;
-	top: 0;
-	left:205px;
+	top: 3px;
+	left:220px;
 
 }
 
 #score-opponent{
 	position: fixed;
-	top: 0;
-	right:205px;
+	top: 3px;
+	right:220px;
 
 }
 
 #card-deck-player {
 	width: 300px;
 	height: 100%;
-	background-color: #f0f2f5;
+	background-color: rgba(240, 242, 245, 0.9);
 	position: fixed;
 	top: 0;
 	left: 0;
-	position: fixed;
 	overflow-y: auto;
-	text-align: center;}
-}
+	text-align: center;
+/* 	display: flex;
+	justify-content: center; */
+	}
+
 
 
 #card-deck-opponent {
 	width: 300px;
 	height: 100%;
-	border: 3px dotted black;
+	background-color: rgba(240, 242, 245, 0.9);
 	position: fixed;
 	top: 0;
 	right: 0;
 }
 
 .card{
-	border: 3px solid white;
-	margin: 10px 0;
+	border: 1px solid black;
+	margin: 5px 0;
 	border-radius: 90px;
 }
