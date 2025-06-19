@@ -13,6 +13,9 @@
 	crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- 공용 CSS -->
 <link rel="stylesheet" href="/resource/common.css" />
+<!-- WebSocket STOMP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${pageTitle }</title>

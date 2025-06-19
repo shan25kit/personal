@@ -4,32 +4,38 @@
 <c:set var="pageTitle" value="메인" />
 <%@ include file="/WEB-INF/jsp/common/header.jsp"%>
 
+<div class="message-area" style="display: none;">
+	<div id="nickname-display"></div>
+	<div id="turn-info"></div>
+	<button id="end-turn" disabled>-></button>
+</div>
+
 <div class="main-container">
 	<div id="hex-grid" class="hex-grid"></div>
 </div>
 <div class="deck-area">
 	<div id="card-deck-player" class="card-deck">
-		<h1 style = "color: white">Mushroom Card</h1>
-		<div id="score-player">
-			<span>Score: <strong id="total-score">0</strong></span>
+		<h1 style="color: white">Mushroom Card</h1>
+		<div id="score-area-player">
+			<span>Score: <strong id="total-score-player">0</strong></span>
 		</div>
 	</div>
 	<div id="card-deck-opponent" class="card-deck">
-		<div id="score-opponent">
-			<span>Score: <strong id="total-score">0</strong></span>
+		<div id="score-area-opponent">
+			<span>Score: <strong id="total-score-opponent">0</strong></span>
 		</div>
 	</div>
 </div>
 
 
 <script>
+
 //초기 변수 및 상수 설정
 const centerCube = { x: 0, y: 0, z: 0 };
 const size = 50;
 const tileWidth = Math.sqrt(3) * size;
 const tileHeight = 2 * size;
 const tileMap = new Map();
-let totalScore = 0;
 
 const defaultTileColor = '#f5f5f5';
 const centerTileColor = 'black';
@@ -41,10 +47,16 @@ const environmentColors = {
   '기타': '#f5f5f5'
 };
 
+let stompClient = null;
+let nickname = null;
+let totalScore = 0;
+
 $(document).ready(function () {
   api1();
   createInitialTile();
-});
+  
+ 
+  });
 
 // --- 데이터 API 요청 ---
 function api1() {
@@ -205,7 +217,33 @@ function createInitialTile() {
   tile.one('click', () => {
     generateNeighborTiles(centerCube);
     $('.deck-area').fadeIn();
+    $('.message-area').fadeIn();
+    
+    const socket = new SockJS("/ws/turn");
+    stompClient = Stomp.over(socket);
+    nickname = prompt("닉네임 입력") || "플레이어";
+    stompClient.connect({}, () => {
+      stompClient.send("/app/join", {}, JSON.stringify({ nickname }));
+      stompClient.subscribe("/topic/turn", (message) => {
+        const current = JSON.parse(message.body).currentPlayer;
+        $('#turn-info').text(current === nickname ? "당신의 턴!" : current + "의 턴");
+        $('#end-turn').prop('disabled', current !== nickname);
+      });
+      stompClient.subscribe("/topic/score", (message) => {
+      	  const { nickname: player, score } = JSON.parse(message.body);
+      	  if (player !== nickname) {
+      	    $('#total-score-opponent').text(score);
+      	  }
+      	});
+    });
+    $('#end-turn').on('click', () => {
+      stompClient.send("/app/endTurn", {}, JSON.stringify({ nickname }));
+      $('#end-turn').prop('disabled', true);
+    });
   });
+  
+ 
+
 }
 
 function moveCenterTo(newCenter) {
@@ -235,7 +273,10 @@ function renderToCardDeck(detail) {
   `;
   $('#card-deck-player').append(html);
   totalScore += detail.score;
-  $('#total-score').text(totalScore);
+  $('#total-score-player').text(totalScore);
+  if (stompClient && stompClient.connected) {
+	    stompClient.send("/app/updateScore", {}, JSON.stringify({ nickname, score: totalScore }));
+	  }
 }
 
 function updateScore(purpose) {
@@ -296,8 +337,10 @@ function updateEnvironmentBackground(envKey) {
 	    } else {
 	      tile.css('background-color', isCenterTile(cube) ? centerTileColor : defaultTileColor);
 	    }
-	  });
+	  })
 	}
+	
+	
 	
 </script>
 
