@@ -90,43 +90,45 @@ function api1() {
 }
 
 function api2(fungus, tile) {
-  $.ajax({
-    url: 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkInfo',
-    type: 'GET',
-    data: {
-      serviceKey: '${apiKey}',
-      reqFngsPilbkNo: fungus.fngsPilbkNo
-    },
-    dataType: 'xml',
-    success: function (data) {
-      $(data).find('item').each(function () {
-    	const purpose = $(this).find('fngsPrpseTpcdNm').text() ?? '';
-        const detail = {
-          name: $(this).find('fngsGnrlNm').text(),
-          familyKor: $(this).find('familyKorNm').text(),
-          family: $(this).find('familyNm').text(),
-          genusKor: $(this).find('genusKorNm').text(),
-          genus: $(this).find('genusNm').text(),
-          type: $(this).find('mshrmTpcdNm').text(),
-          ecology: $(this).find('fngsEclgTpcdNm').text(),
-          environment: $(this).find('grwEvrntDesc').text(),
-          season: $(this).find('occrrSsnNm').text(),
-          color: $(this).find('mshrmColorCdNm').text(),
-          shape: $(this).find('shpe').text(),
-          purpose: purpose,
-          score: updateScore(purpose)
-        };
-		
-        tile.data('detail', detail);
-        console.log(detail);
-        
-      });
-    }
-  });
-}
+	  return new Promise((resolve, reject) => {
+	    $.ajax({
+	      url: 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkInfo',
+	      type: 'GET',
+	      data: {
+	        serviceKey: '${apiKey}',
+	        reqFngsPilbkNo: fungus.fngsPilbkNo
+	      },
+	      dataType: 'xml',
+	      success: function (data) {
+	        $(data).find('item').each(function () {
+	          const purpose = $(this).find('fngsPrpseTpcdNm').text() ?? '';
+	          const detail = {
+	            name: $(this).find('fngsGnrlNm').text(),
+	            familyKor: $(this).find('familyKorNm').text(),
+	            family: $(this).find('familyNm').text(),
+	            genusKor: $(this).find('genusKorNm').text(),
+	            genus: $(this).find('genusNm').text(),
+	            type: $(this).find('mshrmTpcdNm').text(),
+	            ecology: $(this).find('fngsEclgTpcdNm').text(),
+	            environment: $(this).find('grwEvrntDesc').text(),
+	            season: $(this).find('occrrSsnNm').text(),
+	            color: $(this).find('mshrmColorCdNm').text(),
+	            shape: $(this).find('shpe').text(),
+	            purpose: purpose,
+	            score: updateScore(purpose)
+	          };
+	          tile.data('detail', detail);
+	          resolve(); // 데이터 세팅 완료
+	        });
+	      },
+	      error: reject
+	    });
+	  });
+	}
+
 
 // --- 타일 생성 관련 ---
-function createTile(cube, options = {}) {
+async function createTile(cube, options = {}) {
   const keyStr = key(cube);
   if (tileMap.has(keyStr)) return;
 
@@ -141,10 +143,14 @@ function createTile(cube, options = {}) {
   tile.data('cube', cube);
 
   if (key(cube) !== key(centerCube)) {
-      $.get('/fungus/random', function(fungus) {
-    	  console.log(fungus,tile);
-    	  api2(fungus,tile);	  
-	  	})
+	  try {
+		  const fungus = await $.ajax({ url: '/fungus/random' });
+	      await api2(fungus, tile); // detail이 세팅될 때까지 대기
+	    } catch (error) {
+	      console.error("API 오류:", error);
+	      return; // 실패 시 타일 추가하지 않음
+	    }
+   
   }
   
   tile.hover(function () {
@@ -199,29 +205,27 @@ function createTile(cube, options = {}) {
   $('#hex-grid').append(tile);
 }
 
-function generateNeighborTiles(center) {
-  getCubeDirections().forEach(dir => {
-    const neighbor = {
-      x: center.x + dir.x,
-      y: center.y + dir.y,
-      z: center.z + dir.z
-    };
-    createTile(neighbor);
-  });
-}
+async function generateNeighborTiles(center) {
+	  for (const dir of getCubeDirections()) {
+	    const neighbor = {
+	      x: center.x + dir.x,
+	      y: center.y + dir.y,
+	      z: center.z + dir.z
+	    };
+	    await createTile(neighbor);
+	  }
+	}
 
-function createInitialTile() {
-  const centerTile = createTile(centerCube, { label: 'M I S' });
+
+async function createInitialTile() {
+  await createTile(centerCube, { label: 'M I S' });
   const tile = tileMap.get(key(centerCube));
   tile.css({ backgroundColor: centerTileColor, color: 'white', fontSize: '1.5rem' });
-  tile.one('click', () => {
-    generateNeighborTiles(centerCube);
-    $('.deck-area').fadeIn();
-    $('.message-area').fadeIn();
-    
+  
+  tile.one('click', async() => {
+    nickname = prompt("닉네임 입력") || "플레이어";
     const socket = new SockJS("/ws/turn");
     stompClient = Stomp.over(socket);
-    nickname = prompt("닉네임 입력") || "플레이어";
     stompClient.connect({}, () => {
       stompClient.send("/app/join", {}, JSON.stringify({ nickname }));
       stompClient.subscribe("/topic/turn", (message) => {
@@ -240,16 +244,21 @@ function createInitialTile() {
       stompClient.send("/app/endTurn", {}, JSON.stringify({ nickname }));
       $('#end-turn').prop('disabled', true);
     });
+    
+    $('.deck-area').fadeIn();
+    $('.message-area').fadeIn();
+   generateNeighborTiles(centerCube);
+    
   });
   
  
 
 }
 
-function moveCenterTo(newCenter) {
+async function moveCenterTo(newCenter) {
   const offset = cubeToPixel({ x: -newCenter.x, y: -newCenter.y, z: -newCenter.z });
   $('#hex-grid').css('transform', `translate(\${offset.x}px, \${offset.y}px)`);
-  generateNeighborTiles(newCenter);
+  await generateNeighborTiles(newCenter);
 }
 
 // --- 카드 렌더링 ---
