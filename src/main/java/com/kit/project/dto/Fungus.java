@@ -11,4 +11,6 @@ public class Fungus {
 	private int id;
 	private String fngsGnrlNm;
 	private int fngsPilbkNo;
+	private String purpose;
+	private String envrionment;
 }

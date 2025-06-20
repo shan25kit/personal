@@ -23,6 +23,7 @@
 	<div id="card-deck-opponent" class="card-deck">
 		<div id="score-area-opponent">
 			<span>Score: <strong id="total-score-opponent">0</strong></span>
+			<div id="opponent-name"></div>
 		</div>
 	</div>
 </div>
@@ -49,6 +50,7 @@ const environmentColors = {
 
 let stompClient = null;
 let nickname = null;
+let isSingle = true;
 let totalScore = 0;
 
 $(document).ready(function () {
@@ -227,32 +229,56 @@ async function createInitialTile() {
     const socket = new SockJS("/ws/turn");
     stompClient = Stomp.over(socket);
     stompClient.connect({}, () => {
+    	
+    
       stompClient.send("/app/join", {}, JSON.stringify({ nickname }));
+      
       stompClient.subscribe("/topic/turn", (message) => {
-        const current = JSON.parse(message.body).currentPlayer;
-        $('#turn-info').text(current === nickname ? "당신의 턴!" : current + "의 턴");
+    	  const turnData = JSON.parse(message.body);
+    	  const current = turnData.currentPlayer;
+    	  const players = turnData.players;  
+        $('#turn-info').text(current === nickname ? "당신의 턴!" : `\${current}의 턴`);
+        const opponent = players.find(p => p !== nickname);
+        $('#opponent-name').text(opponent || '대기 중');        
         $('#end-turn').prop('disabled', current !== nickname);
       });
+      
       stompClient.subscribe("/topic/score", (message) => {
       	  const { nickname: player, score } = JSON.parse(message.body);
-      	  if (player !== nickname) {
+      	  if (player === nickname) {
+      	    $('#total-score-player').text(score);
+      	  } else {
       	    $('#total-score-opponent').text(score);
       	  }
       	});
+      
+ 	 stompClient.subscribe("/topic/gameover", (message) => {
+      	  const { nickname: endedPlayer, message: gameMsg } = JSON.parse(message.body);
+      	  const isMe = endedPlayer === nickname;
+
+      	  alert(`${endedPlayer}님이 ${gameMsg}`);
+      	  
+      	  $('#turn-info').text(`게임 종료: ${endedPlayer} ${gameMsg}`);
+      	  $('#end-turn').prop('disabled', true);
+          $('.deck-area, .message-area').fadeOut();
+      	  $('.hex-tile').off('click'); // 모든 타일 클릭 막기
+      	  $('.hex-tile').off('mouseenter mouseleave');
+      	});
     });
+    
     $('#end-turn').on('click', () => {
       stompClient.send("/app/endTurn", {}, JSON.stringify({ nickname }));
       $('#end-turn').prop('disabled', true);
     });
+     
     
     $('.deck-area').fadeIn();
     $('.message-area').fadeIn();
+    $('#nickname-display').text(nickname);
    generateNeighborTiles(centerCube);
     
   });
   
- 
-
 }
 
 async function moveCenterTo(newCenter) {

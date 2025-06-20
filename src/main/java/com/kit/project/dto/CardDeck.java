@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CardDeck {
+ private String player;
  private int score;
  private Fungus fungus;
 }

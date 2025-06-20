@@ -9,6 +9,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+import com.kit.project.dto.MessagePayLoads.GameOverMessage;
 import com.kit.project.dto.MessagePayLoads.PlayerAction;
 import com.kit.project.dto.MessagePayLoads.PlayerJoinRequest;
 import com.kit.project.dto.MessagePayLoads.ScoreMessage;
@@ -32,18 +33,29 @@ public class TurnController {
             players.add(req.getNickname());
             scoreMap.put(req.getNickname(), 0);
         }
-        template.convertAndSend("/topic/turn", new TurnMessage(players.get(currentTurn)));
+        template.convertAndSend("/topic/turn", new TurnMessage(players.get(currentTurn),players));
     }
 
     @MessageMapping("/endTurn")
     public void endTurn(PlayerAction action) {
         currentTurn = (currentTurn + 1) % players.size();
-        template.convertAndSend("/topic/turn", new TurnMessage(players.get(currentTurn)));
+        template.convertAndSend("/topic/turn", new TurnMessage(players.get(currentTurn),players));
     }
 
     @MessageMapping("/updateScore")
     public void updateScore(ScoreMessage score) {
         scoreMap.put(score.getNickname(), score.getScore());
         template.convertAndSend("/topic/score", score);
+        // 승리 조건: 100점 이상
+        if (score.getScore() >= 100) {
+            GameOverMessage winMsg = new GameOverMessage(score.getNickname(), "승리!");
+            template.convertAndSend("/topic/gameover", winMsg);
+            return;
+        }
+        // 패배 조건: 0점 이하
+        if (score.getScore() <= 0) {
+            GameOverMessage loseMsg = new GameOverMessage(score.getNickname(), "패배 (0점)");
+            template.convertAndSend("/topic/gameover", loseMsg);
+        }
     }
 }
