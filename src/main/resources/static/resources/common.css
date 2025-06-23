@@ -1,0 +1,100 @@
+body, html {
+	margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+.main-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+
+#hex-grid {
+	position: relative;
+	width: 100vw;
+    height: 100vh;
+    transform: translate(0, 0);
+    transition: transform 0.3s ease; 
+}
+
+.hex-tile {
+	position: absolute;
+	width: 86.6px;
+	height: 100px;
+	clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+	text-align: center;
+	color: #333;
+	text-align: center;
+    font-weight: bold;
+	font-size: 0.6rem;
+	transition: background-color 0.3s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	
+	}
+
+.hex-tile:hover {
+	cursor: pointer;
+	
+}
+.message-area{
+  position: fixed;
+  top: 20px; /* 상단에서 20px 아래 */
+  left: 50%; /* 수평 가운데 정렬 기준 */
+  transform: translateX(-50%); /* 가운데 정렬 */
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+.deck-area{
+	display: none;
+}
+
+#score-area-player{
+	position: fixed;
+	top: 3px;
+	left:220px;
+
+}
+
+#score-area-opponent{
+	position: fixed;
+	top: 3px;
+	right:220px;
+
+}
+
+#card-deck-player {
+	width: 300px;
+	height: 100%;
+	background-color: rgba(240, 242, 245, 0.9);
+	position: fixed;
+	top: 0;
+	left: 0;
+	overflow-y: auto;
+	text-align: center;
+/* 	display: flex;
+	justify-content: center; */
+	}
+
+
+
+#card-deck-opponent {
+	width: 300px;
+	height: 100%;
+	background-color: rgba(240, 242, 245, 0.9);
+	position: fixed;
+	top: 0;
+	right: 0;
+}
+
+.card{
+	border: 1px solid black;
+	margin: 5px 0;
+	border-radius: 60px;
+}

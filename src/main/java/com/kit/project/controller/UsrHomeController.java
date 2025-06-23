@@ -16,10 +16,6 @@ public class UsrHomeController {
 		model.addAttribute("apiKey", apiKey);
 		return "usr/home/main";
 	}
-	@GetMapping("/usr/home/threeTest")
-	public String showThree() {
-		return "usr/home/threeTest";
-	}
 	@GetMapping("/")
 	public String showRoot() {
 		return "redirect:/usr/home/main";

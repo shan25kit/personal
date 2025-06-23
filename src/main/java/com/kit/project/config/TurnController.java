@@ -52,8 +52,8 @@ public class TurnController {
             template.convertAndSend("/topic/gameover", winMsg);
             return;
         }
-        // 패배 조건: 0점 이하
-        if (score.getScore() <= 0) {
+        // 패배 조건: -10점 이하
+        if (score.getScore() <= -10) {
             GameOverMessage loseMsg = new GameOverMessage(score.getNickname(), "패배 (0점)");
             template.convertAndSend("/topic/gameover", loseMsg);
         }

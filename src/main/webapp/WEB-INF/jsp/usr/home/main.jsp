@@ -42,10 +42,11 @@ const defaultTileColor = '#f5f5f5';
 const centerTileColor = 'black';
 
 const environmentColors = {
-  '낙엽': '#f5debf',
-  '활엽수': '#dcf5ec',
-  '곤충': '#d3d3de',
-  '기타': '#f5f5f5'
+  'leaves': '#f5debf',
+  'tree': '#dcf5ec',
+  'rotting': '#efe9f5',
+  'soil': '#ffe2d6',
+  'else': '#f5f5f5'
 };
 
 let stompClient = null;
@@ -105,6 +106,7 @@ function api2(fungus, tile) {
 	        $(data).find('item').each(function () {
 	          const purpose = $(this).find('fngsPrpseTpcdNm').text() ?? '';
 	          const detail = {
+	        	fngsPilbkNo: $(this).find('fngsPilbkNo').text(),
 	            name: $(this).find('fngsGnrlNm').text(),
 	            familyKor: $(this).find('familyKorNm').text(),
 	            family: $(this).find('familyNm').text(),
@@ -291,14 +293,15 @@ async function moveCenterTo(newCenter) {
 function renderToCardDeck(detail) {
   const envKey = getEnvironmentKeyword(detail.environment);
   const bgColor = environmentColors[envKey] || environmentColors['기타'];
+  const canvasId = `canvas-\${detail.fngsPilbkNo}`;
   const html = `
     <div class="card" style="background-color: \${bgColor}; color: black;">
       <h3> \${detail.name}</h3>
+      <div id="\${canvasId}" style="width:100%; height:200px;"></div>
       <p><strong>과:</strong> \${detail.familyKor}</p>
       <p><strong> \${detail.family}</strong></p>
       <p><strong>속:</strong> \${detail.genusKor}</p>
       <p><strong> \${detail.genus}</strong></p>
-   
       <p><strong>발생:</strong> \${detail.environment}</p>
       <p><strong>생태:</strong> \${detail.ecology}</p>
       <p><strong>계절:</strong> \${detail.season}</p>
@@ -307,6 +310,8 @@ function renderToCardDeck(detail) {
     </div>
   `;
   $('#card-deck-player').append(html);
+  renderMushroom(canvasId, detail);
+  
   totalScore += detail.score;
   $('#total-score-player').text(totalScore);
   if (stompClient && stompClient.connected) {
@@ -346,10 +351,11 @@ function getCubeDirections() {
 }
 
 function getEnvironmentKeyword(envText) {
-  if (envText.includes("낙엽")) return "낙엽";
-  if (envText.includes("활엽수")) return "활엽수";
-  if (envText.includes("곤충")) return "곤충";
-  return "기타";
+  if (envText.includes("낙엽") || envText.includes("이끼")) return "leaves";
+  if (envText.includes("활엽수") || envText.includes("침엽수")) return "tree";
+  if (envText.includes("곤충") || envText.includes("썩은나무")) return "rotting";
+  if (envText.includes("땅") || envText.includes("흙")) return "soil"
+  return "else";
 }
 
 function updateEnvironmentBackground(envKey) {
@@ -374,8 +380,227 @@ function updateEnvironmentBackground(envKey) {
 	    }
 	  })
 	}
+//--- three.js 함수 ---	
+function renderMushroom(canvasId, detail) {
+	  const shapeText = detail.shape || "";
+	  const colorText = detail.color || "";
+	  const capSizeMatch = shapeText.match(/갓의?\s*크기는?\s*(\d+(?:\.\d+)?)~(\d+(?:\.\d+)?)cm/);
+	  const capSize = capSizeMatch ? (parseFloat(capSizeMatch[1]) + parseFloat(capSizeMatch[2])) / 2 : 6;
+	  const stemSizeMatch = shapeText.match(/자루의?\s*크기는?\s*(\d+(?:\.\d+)?)~(\d+(?:\.\d+)?)/);
+	  const stemLength = stemSizeMatch ? parseFloat(stemSizeMatch[1]) : 7;
+	  const capColor = getMushroomColor(shapeText, colorText, 'cap');
+	  const stemColor = getMushroomColor(shapeText, colorText, 'stem');
+	    
+	  const $container = $('#' + canvasId); // jQuery 객체
+	  if ($container.length === 0) return;  // 안전성 체크
+	  const container = $container[0];      // DOM element
+
+	  const scene = new THREE.Scene();
+	  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+	  camera.position.set(0, 1, 3);
+
+	  const renderer = new THREE.WebGLRenderer({ alpha: true });
+	  renderer.setSize($container.width(), 200);
+	  renderer.shadowMap.enabled = true;
+	  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+	  $container.empty();
+	  $container.append(renderer.domElement);
+
+	  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+	  directionalLight.position.set(5, 10, 7);
+	  directionalLight.castShadow = true;
+	  directionalLight.shadow.mapSize.width = 2048;
+	  directionalLight.shadow.mapSize.height = 2048;
+	  scene.add(directionalLight);
+	  
+	  const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+	  scene.add(ambientLight);
+
+	  // 배경 텍스처
+	  applyEnvironmentTexture(scene, detail.environment);
+
+	  // 자루
+	const stemHeight = stemLength * 0.15;
+    const stemGeometry = new THREE.CylinderGeometry(
+        capSize * 0.02, // 윗부분 반지름
+        capSize * 0.025, // 아랫부분 반지름  
+        stemHeight, // 높이
+        16
+    );
+	  const stemMaterial = new THREE.MeshStandardMaterial({ 
+        color: stemColor,
+        roughness: 0.8,
+        metalness: 0.1
+  	  });
+	  const stem = new THREE.Mesh(stemGeometry, stemMaterial);
+	    stem.position.y = stemHeight / 2;;
+	    stem.castShadow = true;
+	    stem.receiveShadow = true;
+	    scene.add(stem);
+	    
+	    // 갓
+	   const capRadius = Math.max(capSize * 0.06, 0.3);
+	    
+	   let capGeometry;
+
+	   if (shapeText.includes("편평형")) {
+	     capGeometry = new THREE.CylinderGeometry(
+	       capRadius * 1.2, capRadius, capRadius * 0.2, 32
+	     );
+
+	   } else if (shapeText.includes("종형")) {
+	     capGeometry = new THREE.ConeGeometry(
+	       capRadius * 0.8, capRadius * 2.2, 32
+	     );
+
+	   } else if (shapeText.includes("원뿔형")) {
+	     capGeometry = new THREE.ConeGeometry(
+	       capRadius, capRadius * 1.8, 32
+	     );
+
+	   } else if (shapeText.includes("깔때기형")) {
+	     capGeometry = new THREE.ConeGeometry(
+	       capRadius, capRadius * 0.8, 32
+	     );
+	     capGeometry.scale(1, -1, 1); // 아래로 뒤집기
+
+	   } else if (shapeText.includes("중앙오목형")) {
+	     capGeometry = new THREE.TorusGeometry(
+	       capRadius * 0.7, capRadius * 0.3, 16, 32
+	     );
+	     capGeometry.rotateX(Math.PI / 2);
+
+	   } else if (shapeText.includes("중앙볼록형")) {
+	     capGeometry = new THREE.SphereGeometry(
+	       capRadius, 32, 16
+	     );
+	     capGeometry.scale(1, 1.5, 1); // 볼록하게
+
+	   } else {
+	     // 기본: 반구형
+	     capGeometry = new THREE.SphereGeometry(
+	       capRadius, 32, 16,
+	       0, Math.PI * 2,
+	       0, Math.PI / 1.6
+	     );
+	   }
+        
+        const capMaterial = new THREE.MeshStandardMaterial({
+            color: capColor,
+            roughness: 0.6,
+            metalness: 0.05
+        });
+        
+        const cap = new THREE.Mesh(capGeometry, capMaterial);
+        
+        const capYOffset = (() => {
+        	  if (shapeText.includes("중앙오목형")) return 0.2;
+        	  if (shapeText.includes("깔때기형")) return 0.1;
+        	  if (shapeText.includes("편평형")) return 0.15;
+        	  return 0.3;
+        	})();
+        	cap.position.y = stemHeight + capYOffset;
+        cap.scale.y = 0.6;
+        cap.castShadow = true;
+        cap.receiveShadow = true;
+        scene.add(cap);
 	
-	
+
+    const groundGeometry = new THREE.PlaneGeometry(20, 20);
+    const groundMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0x8B7355, 
+        transparent: true, 
+        opacity: 0.3 
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+    
+	  // 애니메이션
+    let time = 0;
+    const initialCapY = stemHeight + capRadius * 0.1;
+    function animate() {
+        requestAnimationFrame(animate);
+        time += 0.01;
+        
+        // Gentle rotation and slight bobbing
+        cap.rotation.y += 0.005;
+        cap.position.y = initialCapY + Math.sin(time) * 0.02;
+        stem.rotation.z = Math.sin(time) * 0.02;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+	}
+function getMushroomColor(shapeText, colorText, part) {
+    const text = (shapeText + " " + colorText).toLowerCase();
+    
+    // Color mapping for different mushroom parts
+    const colorMap = {
+        // Browns and earth tones
+        '갈색': '#8B4513',
+        '회갈색': '#8B7355',
+        '연갈색': '#CD853F',
+        '진갈색': '#654321',
+        '황갈색': '#B8860B',
+        
+        // Grays
+        '회색': '#808080',
+        '연회색': '#C0C0C0',
+        '진회색': '#555555',
+        '회백색': '#F5F5F5',
+        
+        // Other colors
+        '흰색': '#FFFFFF',
+        '백색': '#FFFFFF',
+        '검정색': '#2F2F2F',
+        '검은색': '#2F2F2F',
+        '황색': '#FFD700',
+        '노란색': '#FFDD00',
+        '주황색': '#FF8C00',
+        '붉은색': '#CD5C5C',
+        '적색': '#CD5C5C'
+    };
+    
+    // Check for color matches
+    for (const [korean, hex] of Object.entries(colorMap)) {
+        if (text.includes(korean)) {
+            return hex;
+        }
+    }
+    
+    // Default colors based on part
+    if (part === 'stem') {
+        return '#F0E68C'; // Light khaki for stem
+    } else {
+        return '#A0522D'; // Sienna for cap
+    }
+}
+
+	function applyEnvironmentTexture(scene, environmentText) {
+	  const loader = new THREE.TextureLoader();
+
+	 if (environmentText.includes("활엽수")|| environmentText.includes("침엽수")) {
+	    loader.load('/images/tree.jpg', texture => {
+	      scene.background = texture;
+	    });
+	  } else if (environmentText.includes("땅") || environmentText.includes("흙")) {
+	    loader.load('/images/soil.jpg', texture => {
+	      scene.background = texture;
+	  		  });
+	  } else if (environmentText.includes("낙엽") || environmentText.includes("이끼")) {
+		    loader.load('/images/leaves.jpg', texture => {
+			      scene.background = texture;
+			  });
+	  } else if (environmentText.includes("썩은나무") || environmentText.includes("곤충")) {
+		   loader.load('/images/rotting.jpg', texture => {
+					scene.background = texture;
+			   });
+	  } else {
+	    scene.background = new THREE.Color(0xe0e0e0);
+	  }
+	}	
 	
 </script>
 
