@@ -86,6 +86,7 @@ function api1() {
         url: '/api/postFngsData',
         type: 'POST',
         contentType: 'application/json',
+		dataType: 'json',
         data: JSON.stringify(itemList)
       });
     }
@@ -177,15 +178,16 @@ async function createTile(cube, options = {}) {
 	  });
 	});
 
-	tile.on('click', function () {
-	  if (key(cube) !== key(centerCube)) {
-          moveCenterTo(cube);}
+	tile.on('click', async function () {
 	  const detail = $(this).data('detail');
 	  if (!detail || $(this).data('clicked')) return;
+	  
+	  if (key(cube) !== key(centerCube)) {
+          await moveCenterTo(cube);}
+		  
 	  $(this).data('clicked', true);
 	  const env = getEnvironmentKeyword(detail.environment);
 	  const color = environmentColors[env] || environmentColors['기타'];
-	  
 	  $(this).css({
 		    backgroundColor: color,
 		    color: 'black'
@@ -230,11 +232,10 @@ async function createInitialTile() {
   
   tile.one('click', async() => {
     nickname = prompt("닉네임 입력") || "플레이어";
+	
     const socket = new SockJS("/ws/turn");
     stompClient = Stomp.over(socket);
     stompClient.connect({}, () => {
-    	
-    
       stompClient.send("/app/join", {}, JSON.stringify({ nickname }));
       
       stompClient.subscribe("/topic/turn", (message) => {
@@ -279,7 +280,8 @@ async function createInitialTile() {
     $('.deck-area').fadeIn();
     $('.message-area').fadeIn();
     $('#nickname-display').text(nickname);
-   generateNeighborTiles(centerCube);
+   
+	await generateNeighborTiles(centerCube);
     
   });
   
@@ -299,7 +301,7 @@ function renderToCardDeck(detail) {
   const html = `
     <div class="card" style="background-color: \${bgColor}; color: black;">
       <h3> \${detail.name}</h3>
-      <div id="\${canvasId}" style="width:100%; height:200px;"></div>
+      <div id="\${canvasId}" class="fungus-canvas"></div>
       <p><strong>과:</strong> \${detail.familyKor} <span class="subtext">(\${detail.family})</span></p>
       <p><strong>속:</strong> \${detail.genusKor} <span class="subtext">(\${detail.genus})</span></p>
       <p><strong>발생:</strong> \${detail.environment}</p>
