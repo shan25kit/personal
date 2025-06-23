@@ -15,7 +15,7 @@
 </div>
 <div class="deck-area">
 	<div id="card-deck-player" class="card-deck">
-		<h1 style="color: white">Mushroom Card</h1>
+		<h1>MUSHROOM CARD</h1>
 		<div id="score-area-player">
 			<span>Score: <strong id="total-score-player">0</strong></span>
 		</div>
@@ -193,11 +193,13 @@ async function createTile(cube, options = {}) {
 
 	if ($(this).find('.fungus-detail').length === 0) {
 		    $(this).append(`
-		      <div class="fungus-detail">
-		        <img src="https://e1.pngegg.com/pngimages/317/581/png-clipart-super-mario-icons-1up-mushroom-thumbnail.png"
-		          style="width:20px; height:auto; margin-left:5px;">
-		        <span>\${detail.name} (\${detail.score})</span>
-		      </div>
+		    		<div class="fungus-detail">
+		    	    <img class="fungus-icon" src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Novosel_mushroom.svg" alt="버섯 아이콘">
+		    	    <div class="fungus-name"> \${detail.name}</div>
+		    	    <div class="fungus-score \${detail.score < 0 ? 'negative' : 'positive'}">
+		    	      \${detail.score}
+		    	    </div>
+		    	  </div>
 		    `);
 	  };
 
@@ -298,15 +300,14 @@ function renderToCardDeck(detail) {
     <div class="card" style="background-color: \${bgColor}; color: black;">
       <h3> \${detail.name}</h3>
       <div id="\${canvasId}" style="width:100%; height:200px;"></div>
-      <p><strong>과:</strong> \${detail.familyKor}</p>
-      <p><strong> \${detail.family}</strong></p>
-      <p><strong>속:</strong> \${detail.genusKor}</p>
-      <p><strong> \${detail.genus}</strong></p>
+      <p><strong>과:</strong> \${detail.familyKor} <span class="subtext">(\${detail.family})</span></p>
+      <p><strong>속:</strong> \${detail.genusKor} <span class="subtext">(\${detail.genus})</span></p>
       <p><strong>발생:</strong> \${detail.environment}</p>
       <p><strong>생태:</strong> \${detail.ecology}</p>
       <p><strong>계절:</strong> \${detail.season}</p>
       <p><strong> \${detail.purpose}</strong></p>
-      <p><strong>점수:</strong> \${detail.score}점</p>
+      <div class="fungus-score \${detail.score < 0 ? 'negative' : 'positive'}" style="font-size:15px;">
+      \${detail.score}점 </div>
     </div>
   `;
   $('#card-deck-player').append(html);

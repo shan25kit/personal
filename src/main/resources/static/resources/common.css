@@ -97,4 +97,55 @@ body, html {
 	border: 1px solid black;
 	margin: 5px 0;
 	border-radius: 60px;
+	position: relative;
+	font-size: 14px;
+	margin: 10px;
+}
+
+
+.fungus-detail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  padding: 10px;
+  border-radius: 8px;
+  position: relative;
+}
+
+.subtext {
+  font-style: italic;
+  color: #555;
+  margin-left: 5px;
+  font-size: 13px;
+}
+
+.fungus-icon {
+  width: 30px;
+  height: auto;
+  margin-bottom: 5px;
+}
+
+.fungus-name {
+  font-weight: bold;
+  text-align: center;
+  font-size: 10px;
+}
+
+.fungus-score {
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  animation: pulse 1.2s ease-in-out;
+}
+
+.fungus-score.negative {
+  color: red;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.7; }
 }
