@@ -86,6 +86,7 @@ function api1() {
         url: '/api/postFngsData',
         type: 'POST',
         contentType: 'application/json',
+		dataType: 'json',
         data: JSON.stringify(itemList)
       });
     }
@@ -177,15 +178,16 @@ async function createTile(cube, options = {}) {
 	  });
 	});
 
-	tile.on('click', function () {
-	  if (key(cube) !== key(centerCube)) {
-          moveCenterTo(cube);}
+	tile.on('click', async function () {
 	  const detail = $(this).data('detail');
 	  if (!detail || $(this).data('clicked')) return;
+	  
+	  if (key(cube) !== key(centerCube)) {
+          await moveCenterTo(cube);}
+		  
 	  $(this).data('clicked', true);
 	  const env = getEnvironmentKeyword(detail.environment);
 	  const color = environmentColors[env] || environmentColors['기타'];
-	  
 	  $(this).css({
 		    backgroundColor: color,
 		    color: 'black'
@@ -230,11 +232,10 @@ async function createInitialTile() {
   
   tile.one('click', async() => {
     nickname = prompt("닉네임 입력") || "플레이어";
+	
     const socket = new SockJS("/ws/turn");
     stompClient = Stomp.over(socket);
     stompClient.connect({}, () => {
-    	
-    
       stompClient.send("/app/join", {}, JSON.stringify({ nickname }));
       
       stompClient.subscribe("/topic/turn", (message) => {
@@ -279,7 +280,8 @@ async function createInitialTile() {
     $('.deck-area').fadeIn();
     $('.message-area').fadeIn();
     $('#nickname-display').text(nickname);
-   generateNeighborTiles(centerCube);
+   
+	await generateNeighborTiles(centerCube);
     
   });
   
@@ -299,7 +301,7 @@ function renderToCardDeck(detail) {
   const html = `
     <div class="card" style="background-color: \${bgColor}; color: black;">
       <h3> \${detail.name}</h3>
-      <div id="\${canvasId}" style="width:100%; height:200px;"></div>
+      <div id="\${canvasId}" class="fungus-canvas"></div>
       <p><strong>과:</strong> \${detail.familyKor} <span class="subtext">(\${detail.family})</span></p>
       <p><strong>속:</strong> \${detail.genusKor} <span class="subtext">(\${detail.genus})</span></p>
       <p><strong>발생:</strong> \${detail.environment}</p>
@@ -391,7 +393,8 @@ function renderMushroom(canvasId, detail) {
 	  const stemLength = stemSizeMatch ? parseFloat(stemSizeMatch[1]) : 7;
 	  const capColor = getMushroomColor(shapeText, colorText, 'cap');
 	  const stemColor = getMushroomColor(shapeText, colorText, 'stem');
-	    
+	  const isPoisonous = detail.purpose === '독버섯'; 
+	  
 	  const $container = $('#' + canvasId); // jQuery 객체
 	  if ($container.length === 0) return;  // 안전성 체크
 	  const container = $container[0];      // DOM element
@@ -506,7 +509,130 @@ function renderMushroom(canvasId, detail) {
         cap.receiveShadow = true;
         scene.add(cap);
 	
-
+        // 눈 생성
+         const eyeSize = capRadius * 1.2;
+        
+         
+      // 텍스처 생성
+         const createLeftEyeTexture = (capRadius, isPoisonous) => {
+        	 const canvas = document.createElement('canvas');
+             const size = 256;
+             canvas.width = size;
+             canvas.height = size;
+             const ctx = canvas.getContext('2d');
+           
+             ctx.clearRect(0, 0, size, size);   // 배경을 투명하게
+             
+             const eyeColor = isPoisonous ? '#FF0000' : '#000000';
+             
+             ctx.strokeStyle = eyeColor;
+             ctx.lineWidth = 25;
+             ctx.lineCap = 'round';
+             ctx.beginPath();
+             
+             if (isPoisonous) {
+                 // 화난 눈썹 (왼쪽 눈용 - 역슬래시 모양)
+                  ctx.moveTo(size/2 , size/2 - 100);  // 중앙에서 시작 (더 화나게)
+       			 ctx.lineTo(size/2 + 30, size/2 - 60);  // 오른쪽 위로
+                 
+             } else {
+                 // 부드러운 눈썹 (왼쪽 눈용 아치 모양)
+                 ctx.moveTo(size/2 - 50, size/2 - 60);
+                 ctx.quadraticCurveTo(size/2 - 25, size/2 - 75, size/2, size/2 - 65);
+             }
+             ctx.stroke();
+             
+          // 왼쪽 눈 - 흰자위
+             ctx.fillStyle = 'white';
+             ctx.beginPath();
+             ctx.arc(size/2 - 15, size/2 + 10, size/5, 0, Math.PI * 2);
+             ctx.fill();
+             
+             // 왼쪽 눈 - 눈동자
+             ctx.fillStyle = eyeColor;
+             ctx.beginPath();
+             ctx.arc(size/2 - 10, size/2 + 15, size/14, 0, Math.PI * 2);
+             ctx.fill();
+             
+             return canvas;
+      };
+      const createRightEyeTexture = (capRadius, isPoisonous) => {
+        	 const canvas = document.createElement('canvas');
+             const size = 256;
+             canvas.width = size;
+             canvas.height = size;
+             const ctx = canvas.getContext('2d');
+             
+             ctx.clearRect(0, 0, size, size);
+             
+             const eyeColor = isPoisonous ? '#FF0000' : '#000000';
+             
+             // 오른쪽 눈썹 (대칭)
+             ctx.strokeStyle = eyeColor;
+             ctx.lineWidth = 25;
+             ctx.lineCap = 'round';
+             ctx.beginPath();
+             
+             if (isPoisonous) {
+                 // 화난 눈썹 (V자 모양)
+            	ctx.moveTo(size/2 - 30, size/2 - 60);  // 왼쪽 위에서 시작
+                 ctx.lineTo(size/2 , size/2 - 100);  // 중앙 아래로 (더 화나게)
+             } else {
+                 // 부드러운 눈썹 (아치 모양)
+            	 ctx.moveTo(size/2 - 25, size/2 - 75);
+                 ctx.quadraticCurveTo(size/2 + 10, size/2 - 85, size/2 + 45, size/2 - 70);
+             }
+             ctx.stroke();
+             
+             // 오른쪽 눈 - 흰자위
+             ctx.fillStyle = 'white';
+             ctx.beginPath();
+             ctx.arc(size/2 + 15, size/2 + 10, size/5, 0, Math.PI * 2);
+             ctx.fill();
+             
+             // 오른쪽 눈 - 눈동자
+             ctx.fillStyle = eyeColor;
+             ctx.beginPath();
+             ctx.arc(size/2 + 10, size/2 + 15, size/14, 0, Math.PI * 2);
+             ctx.fill();
+             return canvas;
+         };
+         const leftEyeCanvas = createLeftEyeTexture(capRadius, isPoisonous);
+         const rightEyeCanvas = createRightEyeTexture(capRadius, isPoisonous);
+         const leftEyeTexture = new THREE.CanvasTexture(leftEyeCanvas);
+         const rightEyeTexture = new THREE.CanvasTexture(rightEyeCanvas);
+         
+         leftEyeTexture.needsUpdate = true;
+         rightEyeTexture.needsUpdate = true;
+         const eyeGeometry = new THREE.PlaneGeometry(eyeSize, eyeSize);
+         
+         const leftEyeMaterial = new THREE.MeshBasicMaterial({ 
+             map: leftEyeTexture,
+             transparent: true,
+             alphaTest: 0.5,
+             side: THREE.DoubleSide
+         });
+         
+         const rightEyeMaterial = new THREE.MeshBasicMaterial({ 
+             map: rightEyeTexture,
+             transparent: true,
+             alphaTest: 0.5,
+             side: THREE.DoubleSide
+         });
+         
+         // 메시 생성
+         const leftEye = new THREE.Mesh(eyeGeometry, leftEyeMaterial);
+         const rightEye = new THREE.Mesh(eyeGeometry, rightEyeMaterial);
+      
+         const eyeYPosition = stemHeight * 0.9 + capYOffset * 0.3;
+         const eyeZPosition = capRadius * 1.2;
+         
+         leftEye.position.set(-capRadius * 0.25, eyeYPosition, eyeZPosition);
+         rightEye.position.set(capRadius * 0.25, eyeYPosition, eyeZPosition);
+         
+         scene.add(leftEye);
+         scene.add(rightEye);
+         
     const groundGeometry = new THREE.PlaneGeometry(20, 20);
     const groundMaterial = new THREE.MeshStandardMaterial({ 
         color: 0x8B7355, 
@@ -520,15 +646,55 @@ function renderMushroom(canvasId, detail) {
     
 	  // 애니메이션
     let time = 0;
+   
+    let blinkTimer = 0;
+    let isBlinking = false;
+    
     const initialCapY = stemHeight + capRadius * 0.1;
     function animate() {
         requestAnimationFrame(animate);
         time += 0.01;
+        blinkTimer += 0.01;
         
         // Gentle rotation and slight bobbing
         cap.rotation.y += 0.005;
         cap.position.y = initialCapY + Math.sin(time) * 0.02;
         stem.rotation.z = Math.sin(time) * 0.02;
+        
+        
+ /*        const currentEyeY = stemHeight + capYOffset - 0.1;
+        leftEye.position.y = currentEyeY;
+        rightEye.position.y = currentEyeY; */
+        
+        // 깜빡임 애니메이션
+        if (blinkTimer > 2 + Math.random() * 3) {
+            isBlinking = true;
+            blinkTimer = 0;
+        }
+        
+        if (isBlinking) {
+            const blinkProgress = Math.min(blinkTimer * 10, 1);
+            const scaleY = blinkProgress < 0.5 ? 
+                1 - (blinkProgress * 2) * 0.9 : 
+                0.1 + ((blinkProgress - 0.5) * 2) * 0.9;
+            
+            leftEye.scale.y = scaleY;
+            rightEye.scale.y = scaleY;
+            
+            if (blinkProgress >= 1) {
+                isBlinking = false;
+                leftEye.scale.y = 1;
+                rightEye.scale.y = 1;
+            }
+        }
+        
+       /*  // 독버섯일 때 무서운 애니메이션
+        if (isPoisonous) {
+            const scary = Math.sin(time * 2) * 0.1;
+            leftEye.rotation.z = scary;
+            rightEye.rotation.z = -scary;
+        }
+         */
         renderer.render(scene, camera);
     }
     animate();
