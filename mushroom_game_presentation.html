@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIS (Mushroom Information System) - 프레젠테이션</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255, 182, 193, 0.3) 0%, transparent 40%),
+                radial-gradient(circle at 70% 60%, rgba(255, 218, 185, 0.3) 0%, transparent 40%),
+                radial-gradient(circle at 50% 80%, rgba(152, 251, 152, 0.3) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(255, 160, 122, 0.3) 0%, transparent 40%),
+                radial-gradient(circle at 30% 70%, rgba(221, 160, 221, 0.3) 0%, transparent 40%),
+                linear-gradient(135deg, #2d5a27 0%, #1a3d1a 50%, #0f2a0f 100%);
+            color: white;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .presentation-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            padding: 60px;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            text-align: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        .slide h1 {
+            font-size: 5rem;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            color: white;
+            font-weight: bold;
+        }
+
+        .slide h2 {
+            font-size: 3.5rem;
+            margin-bottom: 50px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .slide h3 {
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .slide p {
+            font-size: 1.6rem;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            max-width: 900px;
+            color: #f0f0f0;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .tech-card {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 40px;
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .tech-card h3 {
+            color: white !important;
+            font-size: 2rem !important;
+            margin-bottom: 20px !important;
+        }
+
+        .tech-card p {
+            font-size: 1.4rem !important;
+            color: #f0f0f0 !important;
+        }
+
+        .tech-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+            text-align: left;
+            max-width: 1000px;
+        }
+
+        .feature-item {
+            background: rgba(255,255,255,0.15);
+            padding: 30px;
+            border-radius: 15px;
+            border-left: 5px solid white;
+            font-size: 1.4rem;
+            color: #f0f0f0;
+        }
+
+        .feature-item strong {
+            color: white;
+            font-size: 1.5rem;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            padding: 15px 30px;
+            background: rgba(255,255,255,0.3);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(0,0,0,0.5);
+            padding: 15px 25px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            color: white;
+            font-weight: bold;
+        }
+
+        .mushroom-icon {
+            font-size: 6rem;
+            margin: 30px;
+            animation: mushroom-bounce 3s ease-in-out infinite;
+        }
+
+        @keyframes mushroom-bounce {
+            0%, 100% { 
+                transform: scale(1) translateY(0px) rotate(0deg);
+                filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+            }
+            25% { 
+                transform: scale(1.1) translateY(-10px) rotate(2deg);
+                filter: drop-shadow(0 15px 30px rgba(0,0,0,0.4));
+            }
+            50% { 
+                transform: scale(1.15) translateY(-15px) rotate(0deg);
+                filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+            }
+            75% { 
+                transform: scale(1.1) translateY(-10px) rotate(-2deg);
+                filter: drop-shadow(0 15px 30px rgba(0,0,0,0.4));
+            }
+        }
+
+
+
+
+
+        .demo-section {
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .demo-section h3 {
+            color: white !important;
+            font-size: 2.2rem !important;
+            margin-bottom: 25px !important;
+        }
+
+        .demo-section h4 {
+            color: white;
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+        }
+
+        .demo-section p {
+            font-size: 1.4rem !important;
+            color: #f0f0f0 !important;
+        }
+
+        .code-snippet {
+            background: rgba(0,0,0,0.6);
+            border-radius: 15px;
+            padding: 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            text-align: left;
+            margin: 25px 0;
+            border-left: 5px solid white;
+            color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- 슬라이드 카운터 -->
+        <div class="slide-counter">
+            <span id="current-slide">1</span> / <span id="total-slides">8</span>
+        </div>
+
+        <!-- 슬라이드 1: 타이틀 -->
+        <div class="slide active">
+            <div class="mushroom-icon">🍄</div>
+            <h1>MIS</h1>
+            <p style="font-size: 2.2rem; margin-bottom: 25px; color: white; font-weight: bold;">Mushroom Information System</p>
+            <p style="font-size: 1.8rem; margin-bottom: 35px; color: #f0f0f0;">육각형 격자 기반 웹 버섯 수집 게임</p>
+            <p style="font-size: 1.5rem; color: #f0f0f0;">공공데이터와 게임의 만남</p>
+        </div>
+
+        <!-- 슬라이드 2: 프로젝트 개요 -->
+        <div class="slide">
+            <h2>🎯 프로젝트 개요</h2>
+            <div class="demo-section">
+                <h3>게임 + 교육 + 실제 데이터</h3>
+                <p>산림청 국립수목원의 <strong style="color: white;">실제 버섯 데이터</strong>를 활용한 교육용 웹 게임</p>
+                <br>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <strong>🎮 재미있는 게임플레이</strong><br>
+                        육각형 타일 탐험과 수집
+                    </div>
+                    <div class="feature-item">
+                        <strong>📚 교육적 가치</strong><br>
+                        실제 버섯 생태 정보 학습
+                    </div>
+                    <div class="feature-item">
+                        <strong>🌐 웹 기반</strong><br>
+                        브라우저에서 바로 플레이
+                    </div>
+                    <div class="feature-item">
+                        <strong>👥 멀티플레이어</strong><br>
+                        실시간 경쟁 모드 지원
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 슬라이드 3: 기술 스택 -->
+        <div class="slide">
+            <h2>🛠 기술 스택</h2>
+            <div class="tech-grid">
+                <div class="tech-card">
+                    <h3 style="color: #FFD700;">Frontend</h3>
+                    <p>• HTML5/CSS3<br>
+                    • JavaScript ES6+<br>
+                    • jQuery<br>
+                    • Canvas API</p>
+                </div>
+                <div class="tech-card">
+                    <h3 style="color: #FFD700;">Backend & API</h3>
+                    <p>• 산림청 공공데이터 API<br>
+                    • RESTful API<br>
+                    • WebSocket (STOMP)<br>
+                    • 실시간 통신</p>
+                </div>
+                <div class="tech-card">
+                    <h3 style="color: #FFD700;">게임 엔진</h3>
+                    <p>• Hexagonal Grid System<br>
+                    • 큐브 좌표계<br>
+                    • Async/Await 패턴<br>
+                    • Event-Driven 아키텍처</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 슬라이드 4: 핵심 기능 -->
+        <div class="slide">
+            <h2>⭐ 핵심 기능</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <strong>🔶 육각형 격자 시스템</strong><br>
+                    큐브 좌표계 기반 무한 확장 가능한 타일맵
+                </div>
+                <div class="feature-item">
+                    <strong>🍄 실시간 버섯 데이터</strong><br>
+                    공공데이터 API로 실제 버섯 정보 로딩
+                </div>
+                <div class="feature-item">
+                    <strong>🌈 환경 기반 시각화</strong><br>
+                    서식지별 색상 코딩 및 그룹화
+                </div>
+                <div class="feature-item">
+                    <strong>🏆 점수 시스템</strong><br>
+                    식용/약용/독버섯에 따른 점수 계산
+                </div>
+                <div class="feature-item">
+                    <strong>🃏 카드 컬렉션</strong><br>
+                    수집한 버섯의 상세 정보 카드
+                </div>
+                <div class="feature-item">
+                    <strong>👥 멀티플레이어</strong><br>
+                    실시간 점수 동기화 및 경쟁
+                </div>
+            </div>
+        </div>
+
+        <!-- 슬라이드 5: 게임플레이 -->
+        <div class="slide">
+            <h2>🎮 게임플레이</h2>
+            <div class="demo-section">
+                <h3>플레이 방식</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 30px;">
+                    <div>
+                        <h4 style="color: #FFD700; margin-bottom: 15px;">1. 탐험</h4>
+                        <p>육각형 타일을 클릭하여<br>새로운 버섯 발견</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #FFD700; margin-bottom: 15px;">2. 학습</h4>
+                        <p>버섯의 환경별 분포<br>패턴 학습</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #FFD700; margin-bottom: 15px;">3. 수집</h4>
+                        <p>다양한 버섯 수집으로<br>점수 획득</p>
+                    </div>
+                    <div>
+                        <h4 style="color: #FFD700; margin-bottom: 15px;">4. 경쟁</h4>
+                        <p>다른 플레이어와<br>실시간 경쟁</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 슬라이드 6: 기술적 구현 -->
+        <div class="slide">
+            <h2>💻 기술적 구현</h2>
+            <div class="demo-section">
+                <h3>육각형 좌표계 변환</h3>
+                <div class="code-snippet">
+function cubeToPixel(cube) {
+  return {
+    x: size * Math.sqrt(3) * (cube.x + cube.z / 2),
+    y: size * 3 / 2 * cube.z
+  };
+}
+                </div>
+                <h3>비동기 데이터 로딩</h3>
+                <div class="code-snippet">
+const fungus = await $.ajax({ url: '/fungus/random' });
+await api2(fungus, tile); // 상세 정보 로딩 대기
+                </div>
+            </div>
+        </div>
+
+        <!-- 슬라이드 7: 교육적 가치 -->
+        <div class="slide">
+            <h2>📚 교육적 가치</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <strong>🔬 생물학적 지식</strong><br>
+                    • 분류학 (과, 속, 종)<br>
+                    • 생태학 (서식지, 생태적 역할)<br>
+                    • 실용성 (식용, 약용, 독성)
+                </div>
+                <div class="feature-item">
+                    <strong>🧮 수학적 사고</strong><br>
+                    • 육각형 격자 좌표계<br>
+                    • 공간 인지 능력<br>
+                    • 패턴 인식
+                </div>
+                <div class="feature-item">
+                    <strong>🌱 환경 의식</strong><br>
+                    • 버섯의 생태적 중요성<br>
+                    • 자연 보호 의식<br>
+                    • 생물 다양성 이해
+                </div>
+                <div class="feature-item">
+                    <strong>📊 데이터 활용</strong><br>
+                    • 공공데이터 가치 인식<br>
+                    • 과학적 정보 해석<br>
+                    • 디지털 리터러시
+                </div>
+            </div>
+        </div>
+
+        <!-- 슬라이드 8: 향후 계획 -->
+        <div class="slide">
+            <h2>🚀 향후 계획 & 확장성</h2>
+            <div class="demo-section">
+                <h3>단기 계획</h3>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <strong>🎯 게임 기능 확장</strong><br>
+                        시즌 시스템, 업적, 퀘스트
+                    </div>
+                    <div class="feature-item">
+                        <strong>📱 모바일 최적화</strong><br>
+                        터치 인터페이스, 반응형 디자인
+                    </div>
+                </div>
+                <h3 style="margin-top: 30px;">장기 비전</h3>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <strong>🥽 AR/VR 확장</strong><br>
+                        실제 환경 연동 AR 버전
+                    </div>
+                    <div class="feature-item">
+                        <strong>🌏 글로벌 확장</strong><br>
+                        세계 각국 버섯 데이터 통합
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 40px; font-size: 2rem; color: white; font-weight: bold;">
+                <strong>게임으로 배우는 자연과학의 새로운 패러다임</strong>
+            </div>
+        </div>
+
+        <!-- 네비게이션 -->
+        <div class="navigation">
+            <button class="nav-btn" onclick="previousSlide()">◀ 이전</button>
+            <button class="nav-btn" onclick="nextSlide()">다음 ▶</button>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        document.getElementById('total-slides').textContent = totalSlides;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('current-slide').textContent = currentSlide + 1;
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function previousSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        // 키보드 네비게이션
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                previousSlide();
+            }
+        });
+
+        // 마우스 클릭으로 다음 슬라이드
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.navigation') && !e.target.closest('.nav-btn')) {
+                nextSlide();
+            }
+        });
+    </script>
+</body>
+</html>
