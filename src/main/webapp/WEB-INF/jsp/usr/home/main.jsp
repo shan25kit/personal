@@ -4,6 +4,33 @@
 <c:set var="pageTitle" value="메인" />
 <%@ include file="/WEB-INF/jsp/common/header.jsp"%>
 
+
+
+  <div id="mode-select-modal" class="modal">
+    <div class="modal-box">
+      <h2>Mushroom Information System에 오신 것을 환영합니다.</h2>
+      <div class="form-control">
+        <label for="nickname-input">코드명:</label>
+        <input type="text" id="nickname-input" placeholder="닉네임을 입력하세요" />
+      </div>
+
+      <div class="radio-group">
+        <div class="custom-radio">
+          <input type="radio" name="mode" value="single" checked />
+          <label>싱글 플레이</label>
+        </div>
+        <div class="custom-radio">
+          <input type="radio" name="mode" value="multi" />
+          <label>멀티 플레이 (테스트)</label>
+        </div>
+      </div>
+
+      <div class="modal-action">
+        <button class="btn" id="start-game-btn">시작</button>
+      </div>
+    </div>
+  </div>
+
 <div class="message-area" style="display: none;">
 	<div id="nickname-display"></div>
 	<div id="turn-info"></div>
@@ -15,7 +42,7 @@
 </div>
 <div class="deck-area">
 	<div id="card-deck-player" class="card-deck">
-		<h1>MUSHROOM CARD</h1>
+		<h2>MUSHROOM CARD</h2>
 		<div id="score-area-player">
 			<span>Score: <strong id="total-score-player">0</strong></span>
 		</div>
@@ -50,19 +77,43 @@ const environmentColors = {
 };
 
 let stompClient = null;
-let nickname = null;
+let nickname = "";
 let isSingle = true;
+let isMyTurn = false;
 let totalScore = 0;
 
-$(document).ready(function () {
-  api1();
-  createInitialTile();
-  
- 
-  });
-
+$(document).ready(async function () {
+	  try {
+	    await initializeGame();
+	  } catch (error) {
+	    console.error("게임 초기화 실패:", error);
+	    showErrorMessage("게임을 시작할 수 없습니다.");
+	  }
+	});
+async function initializeGame() {
+	  $('#mode-select-modal').hide();
+	  
+	  // 버섯 데이터 초기화
+	  await initializeFungusData();
+	  
+	  // 중앙 타일 생성
+	  await createInitialTile();
+	  
+	  console.log("게임 초기화 완료");
+	}
+	
+//--- 데이터 API 요청 (async/await 변환) ---
+async function initializeFungusData() {
+  try {
+    await api1();
+    console.log("버섯 데이터 초기화 완료");
+  } catch (error) {
+    console.error("버섯 데이터 초기화 실패:", error);
+    throw error;
+  }
+}
 // --- 데이터 API 요청 ---
-function api1() {
+async function api1() {
   $.ajax({
     url: 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkSearch',
     type: 'GET',
@@ -93,7 +144,7 @@ function api1() {
   });
 }
 
-function api2(fungus, tile) {
+async function api2(fungus, tile) {
 	  return new Promise((resolve, reject) => {
 	    $.ajax({
 	      url: 'http://apis.data.go.kr/1400119/FungiService/fngsPilbkInfo',
@@ -130,7 +181,127 @@ function api2(fungus, tile) {
 	    });
 	  });
 	}
+	
+//---닉네임 세팅 플레이 모드 세팅 ---	
+$(document).on('click', '#start-game-btn', async() => {
+  nickname = $('#nickname-input').val() || '플레이어';
+  console.log(nickname);
+  isSingle = $('input[name="mode"]:checked').val() === 'single';
+  console.log(isSingle);
+  $('#nickname-display').text(nickname);
+  $('#mode-select-modal').hide();
+  $('#game-screen').show();
+  $('.deck-area').fadeIn();
+  $('.message-area').fadeIn();
 
+  if (isSingle) {
+	     startSinglePlayerMode();
+	  } else {
+	     startMultiPlayerMode();
+	  }
+});
+async function startSinglePlayerMode() {
+	  console.log("싱글플레이 모드 시작");
+	  await generateNeighborTiles(centerCube);
+	}
+async function startMultiPlayerMode() {
+	  console.log("멀티플레이 모드 시작");
+	  await setupMultiplayer();
+	}	
+async function setupMultiplayer() {
+	  return new Promise((resolve, reject) => {
+	    const socket = new SockJS("/ws/turn");
+	    stompClient = Stomp.over(socket);
+
+	    stompClient.connect({}, async () => {
+	      try {
+	        // 게임 참가
+	        await sendWebSocketMessage("/app/join", { nickname });
+	        
+	        // 구독 설정
+	        setupWebSocketSubscriptions();
+	        
+	        // UI 설정
+	        setupMultiplayerUI();
+	        
+	        resolve();
+	      } catch (error) {
+	        reject(error);
+	      }
+	    }, reject);
+	  });
+	}
+
+	function setupWebSocketSubscriptions() {
+	  // 대기실 상태
+	  stompClient.subscribe("/topic/waiting", (message) => {
+	    const { count } = JSON.parse(message.body);
+	    $('#turn-info').text(`다른 플레이어 대기 중... (${count}/4)`);
+	  });
+	  
+	  // 게임 시작
+	  stompClient.subscribe("/topic/start", async () => {
+	    await generateNeighborTiles(centerCube);
+	  });
+
+	  // 턴 관리
+	  stompClient.subscribe("/topic/turn", (message) => {
+	    const { currentPlayer, players } = JSON.parse(message.body);
+	    isMyTurn = currentPlayer === nickname;
+	    $('#turn-info').text(isMyTurn ? '당신의 턴!' : `${currentPlayer}의 턴`);
+	    $('#end-turn').prop('disabled', !isMyTurn);
+
+	    const opponent = players.find(p => p !== nickname);
+	    $('#opponent-name').text(opponent || '대기 중');
+	  });
+
+	  // 점수 업데이트
+	  stompClient.subscribe("/topic/score", (message) => {
+	    const { nickname: who, score } = JSON.parse(message.body);
+	    if (who === nickname) {
+	      $('#total-score-player').text(score);
+	    } else {
+	      $('#total-score-opponent').text(score);
+	    }
+	  });
+
+	  // 게임 종료
+	  stompClient.subscribe("/topic/gameover", (message) => {
+	    const { nickname: who, message: result } = JSON.parse(message.body);
+	    alert(`${who}님이 ${result}`);
+	    
+	    $('#turn-info').text(`게임 종료: ${who} ${result}`);
+	    $('#end-turn').prop('disabled', true);
+	    $('.hex-tile').off('click mouseenter mouseleave');
+	  });
+	}
+
+	function setupMultiplayerUI() {
+	  $('#end-turn').off('click').on('click', async () => {
+	    try {
+	      await sendWebSocketMessage("/app/endTurn", { nickname });
+	      $('#end-turn').prop('disabled', true);
+	    } catch (error) {
+	      console.error("턴 종료 실패:", error);
+	    }
+	  });
+	}
+
+	async function sendWebSocketMessage(destination, data) {
+	  return new Promise((resolve, reject) => {
+	    if (!stompClient || !stompClient.connected) {
+	      reject(new Error("WebSocket이 연결되지 않았습니다."));
+	      return;
+	    }
+	    
+	    try {
+	      stompClient.send(destination, {}, JSON.stringify(data));
+	      resolve();
+	    } catch (error) {
+	      reject(error);
+	    }
+	  });
+	}	
 
 // --- 타일 생성 관련 ---
 async function createTile(cube, options = {}) {
@@ -146,16 +317,13 @@ async function createTile(cube, options = {}) {
     backgroundColor: defaultTileColor
   });
   tile.data('cube', cube);
-
-  if (key(cube) !== key(centerCube)) {
-	  try {
-		  const fungus = await $.ajax({ url: '/fungus/random' });
-	      await api2(fungus, tile); // detail이 세팅될 때까지 대기
-	    } catch (error) {
-	      console.error("API 오류:", error);
-	      return; // 실패 시 타일 추가하지 않음
-	    }
-   
+  
+  try {
+    const fungus = await $.ajax({ url: '/fungus/random' });
+    await api2(fungus, tile); // detail이 세팅될 때까지 대기
+  } catch (error) {
+    console.error('버섯 데이터 로딩 실패:', error);
+    return;
   }
   
   tile.hover(function () {
@@ -214,78 +382,27 @@ async function createTile(cube, options = {}) {
 }
 
 async function generateNeighborTiles(center) {
+	  console.log("주변 타일 생성 시작...");
+	  const promises = [];
+	  
 	  for (const dir of getCubeDirections()) {
 	    const neighbor = {
 	      x: center.x + dir.x,
 	      y: center.y + dir.y,
 	      z: center.z + dir.z
 	    };
-	    await createTile(neighbor);
-	  }
-	}
-
+	    promises.push(createTile(neighbor));
+	  
+	  }}
 
 async function createInitialTile() {
   await createTile(centerCube, { label: 'M I S' });
   const tile = tileMap.get(key(centerCube));
   tile.css({ backgroundColor: centerTileColor, color: 'white', fontSize: '1.5rem' });
-  
-  tile.one('click', async() => {
-    nickname = prompt("닉네임 입력") || "플레이어";
-	
-    const socket = new SockJS("/ws/turn");
-    stompClient = Stomp.over(socket);
-    stompClient.connect({}, () => {
-      stompClient.send("/app/join", {}, JSON.stringify({ nickname }));
-      
-      stompClient.subscribe("/topic/turn", (message) => {
-    	  const turnData = JSON.parse(message.body);
-    	  const current = turnData.currentPlayer;
-    	  const players = turnData.players;  
-        $('#turn-info').text(current === nickname ? "당신의 턴!" : `\${current}의 턴`);
-        const opponent = players.find(p => p !== nickname);
-        $('#opponent-name').text(opponent || '대기 중');        
-        $('#end-turn').prop('disabled', current !== nickname);
-      });
-      
-      stompClient.subscribe("/topic/score", (message) => {
-      	  const { nickname: player, score } = JSON.parse(message.body);
-      	  if (player === nickname) {
-      	    $('#total-score-player').text(score);
-      	  } else {
-      	    $('#total-score-opponent').text(score);
-      	  }
-      	});
-      
- 	 stompClient.subscribe("/topic/gameover", (message) => {
-      	  const { nickname: endedPlayer, message: gameMsg } = JSON.parse(message.body);
-      	  const isMe = endedPlayer === nickname;
-
-      	  alert(`${endedPlayer}님이 ${gameMsg}`);
-      	  
-      	  $('#turn-info').text(`게임 종료: ${endedPlayer} ${gameMsg}`);
-      	  $('#end-turn').prop('disabled', true);
-          $('.deck-area, .message-area').fadeOut();
-      	  $('.hex-tile').off('click'); // 모든 타일 클릭 막기
-      	  $('.hex-tile').off('mouseenter mouseleave');
-      	});
-    });
-    
-    $('#end-turn').on('click', () => {
-      stompClient.send("/app/endTurn", {}, JSON.stringify({ nickname }));
-      $('#end-turn').prop('disabled', true);
-    });
-     
-    
-    $('.deck-area').fadeIn();
-    $('.message-area').fadeIn();
-    $('#nickname-display').text(nickname);
-   
-	await generateNeighborTiles(centerCube);
-    
-  });
-  
-}
+  tile.one('click', async () => {
+	  $('#mode-select-modal').css('display', 'flex');
+	  });
+	}
 
 async function moveCenterTo(newCenter) {
   const offset = cubeToPixel({ x: -newCenter.x, y: -newCenter.y, z: -newCenter.z });

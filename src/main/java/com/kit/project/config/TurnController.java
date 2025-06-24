@@ -33,6 +33,15 @@ public class TurnController {
             players.add(req.getNickname());
             scoreMap.put(req.getNickname(), 0);
         }
+        if (players.size() >= 2) {
+            template.convertAndSend("/topic/start", "start");
+            template.convertAndSend("/topic/turn", new TurnMessage(players.get(currentTurn), players));
+        } else {
+            // 아직 시작 조건 미충족 → 대기 알림
+            Map<String, Object> waitingMsg = new HashMap<>();
+            waitingMsg.put("count", players.size());
+            template.convertAndSend("/topic/waiting", waitingMsg);
+        }
         template.convertAndSend("/topic/turn", new TurnMessage(players.get(currentTurn),players));
     }
 
